@@ -1,0 +1,5 @@
+syntax: glob
+tetris/Debug with no optimizations/*
+tetris/Debug/*
+tetris/Release/*
+.vs/tetris/v14/.atsuo
