@@ -70,6 +70,12 @@ void startTimer(uint16_t delay)
 	TCCR1B = (1 << CS10) | (1 << CS12); // start the timer by setting 1024 prescaler
 }
 
+void randomizeNextTetrimino()
+{
+	currentTetrimino = nextTetrimino;
+	currentTetriminoPosition = 3; // top middle initial position of current tetrimino
+	nextTetrimino = (myrand()%7) << 2;
+}
 void gameInit()
 {
 	// init ADC0 which supports random number generator
@@ -81,9 +87,8 @@ void gameInit()
 	//	DDRD = 0x00; // not needed?? (works without this line) Atmega has this by default?
 
 	LcdInit();
-	currentTetrimino = (myrand()%7) << 2;
-	currentTetriminoPosition = 3; // top middle initial position of current tetrimino
-	nextTetrimino = (myrand()%7) << 2;
+	randomizeNextTetrimino(); // run twice to random both current and next tetriminos
+	randomizeNextTetrimino();
 
 	// initialize the timer
 	startTimer(65535-3902); // inform after 1 second period
@@ -240,9 +245,7 @@ void moveTetriminoDown()
 				++score;
 			}
 		}
-		currentTetrimino = nextTetrimino;
-		currentTetriminoPosition = 3; // top middle initial position of current tetrimino
-		nextTetrimino = (myrand()%7) << 2;
+		randomizeNextTetrimino();
 		if (!canPlaceTetrimino(currentTetrimino, currentTetriminoPosition, FALSE))
 		{
 			// GAME OVER
