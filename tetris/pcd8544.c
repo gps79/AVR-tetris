@@ -342,12 +342,14 @@ byte LcdBar ( byte baseX, byte baseY, byte width, byte height)
 	if ( ( baseX+width > LCD_X_RES ) || ( baseY+height > LCD_Y_RES ) ) return OUT_OF_BORDER;
 
     /* Draw lines */
-	for ( tmpIdxY = baseY; tmpIdxY < (baseY + height); tmpIdxY++ )
+	byte upperX = baseX + width - 1;
+	byte upperY = baseY + height - 1;
+	for ( tmpIdxY = baseY; tmpIdxY <= upperX; tmpIdxY++ )
 	{
-		for ( tmpIdxX = baseX; tmpIdxX < (baseX + width); tmpIdxX++ )
+		for ( tmpIdxX = baseX; tmpIdxX <= upperY; tmpIdxX++ )
         {
 			if (g_fillBar // draw filled in bar or
-				|| (tmpIdxX == baseX) || (tmpIdxX == (baseX + width -1)) || (tmpIdxY == baseY) || (tmpIdxY == (baseY + height -1))) // draw a box
+				|| (tmpIdxX == baseX) || (tmpIdxX == upperX) || (tmpIdxY == baseY) || (tmpIdxY == upperY)) // draw a box
 			{
 				LcdSetPixel( tmpIdxX, tmpIdxY);
 			}
