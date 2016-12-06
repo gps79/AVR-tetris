@@ -320,9 +320,6 @@ void LcdSetPen ( LcdPixelMode pen )
 	g_drawingPen = pen;
 }
 
-// global flag telling if to fill in the bar - TRUE, or not (i.e. draw empty box) - FALSE
-bool g_fillBar;
-
 /*
  * Name         :  LcdBar
  * Description  :  Display single bar.
@@ -344,15 +341,11 @@ byte LcdBar ( byte baseX, byte baseY, byte width, byte height)
     /* Draw lines */
 	byte upperX = baseX + width - 1;
 	byte upperY = baseY + height - 1;
-	for ( tmpIdxY = baseY; tmpIdxY <= upperX; tmpIdxY++ )
+	for ( tmpIdxY = baseY; tmpIdxY <= upperY; tmpIdxY++ )
 	{
-		for ( tmpIdxX = baseX; tmpIdxX <= upperY; tmpIdxX++ )
+		for ( tmpIdxX = baseX; tmpIdxX <= upperX; tmpIdxX++ )
         {
-			if (g_fillBar // draw filled in bar or
-				|| (tmpIdxX == baseX) || (tmpIdxX == upperX) || (tmpIdxY == baseY) || (tmpIdxY == upperY)) // draw a box
-			{
-				LcdSetPixel( tmpIdxX, tmpIdxY);
-			}
+			LcdSetPixel( tmpIdxX, tmpIdxY);
         }
 	}
 

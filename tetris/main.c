@@ -92,9 +92,15 @@ void gameInit()
 void drawTile (uint8_t x, uint8_t y)
 {
 	assert(x<8);
-	assert(y<16);
+	assert(y<21);
 
-	LcdBar(y*4, 48-(8 + x*4)-4, 4,4);
+	uint8_t scrX = y*4;
+	uint8_t scrY = 48-(8 + x*4)-4;
+
+	LcdBar(scrX, scrY, 4,4);
+	LcdSetPen(PIXEL_OFF);
+	LcdBar(scrX+1, scrY+1, 2,2);
+	LcdSetPen(PIXEL_ON);
 }
 
 void drawTileLinearly (uint8_t pos)
@@ -102,7 +108,7 @@ void drawTileLinearly (uint8_t pos)
 	assert(pos<8*16 || (pos>=NEXT_TETRIMINO_POSITION && pos<=(NEXT_TETRIMINO_POSITION+10)));
 	uint8_t x = pos & 0x07;
 	uint8_t y = pos >> 3;
-	LcdBar(y*4, 48-(8 + x*4)-4, 4,4);
+	drawTile(x, y);
 }
 
 // tetriminoId contains 3 bits of tetrimino number and 2 bits of orientation
@@ -259,14 +265,12 @@ void displayScene()
 	uint8_t x,y;
 	// display screen decoration
 	LcdClear();
-	g_fillBar = TRUE;
 	LcdSetPen(PIXEL_ON);
 	LcdBar(0,0,72,48);
 	LcdSetPen(PIXEL_OFF);
 	LcdBar(0,7,65,34);
 
 	// draw all tiles dropped till now
-	g_fillBar = FALSE;
 	LcdSetPen(PIXEL_ON);
 	for (y=0;y<16;++y)
 	{

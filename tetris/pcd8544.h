@@ -64,7 +64,6 @@ typedef unsigned int               word;
 /* Cache size in bytes ( 84 * 48 ) / 8 = 504 bytes */
 #define LCD_CACHE_SIZE             ( ( LCD_X_RES * LCD_Y_RES ) / 8)
 extern byte LcdCache [ LCD_CACHE_SIZE ];
-extern bool g_fillBar;
 
 /* Enumeration */
 typedef enum
