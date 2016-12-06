@@ -262,7 +262,6 @@ void moveTetriminoDown()
 
 void displayScene()
 {
-	uint8_t x,y;
 	// display screen decoration
 	LcdClear();
 	LcdSetPen(PIXEL_ON);
@@ -272,15 +271,23 @@ void displayScene()
 
 	// draw all tiles dropped till now
 	LcdSetPen(PIXEL_ON);
-	for (y=0;y<16;++y)
+	uint8_t * lineAddr = &matrix[15];
+	uint8_t y=16;
+	while(y)
 	{
-		for (x=0;x<8;++x)
+		--y;
+		uint8_t bitMask = 0x01;
+		uint8_t x=8;
+		while (x)
 		{
-			if (matrix[y]&(0x80>>x))
+			--x;
+			if ((*lineAddr)&bitMask)
 			{
 				drawTile(x,y);
 			}
+			bitMask <<= 1;
 		}
+		--lineAddr;
 	}
 
 	// draw current tile
