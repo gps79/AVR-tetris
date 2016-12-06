@@ -308,15 +308,13 @@ void LcdSetPixel ( byte x, byte y )
 	offset  = y % 8;
 	if (PIXEL_ON == g_drawingPen)
 		LcdCache[ index ] |= ( 0x01 << offset );
-	else if (PIXEL_XOR == g_drawingPen)
-		LcdCache[ index ] ^= ( 0x01 << offset );
 	else
 		LcdCache[ index ] &= ( ~( 0x01 << offset ));
 }
 
 void LcdSetPen ( LcdPixelMode pen )
 {
-	assert((pen==PIXEL_OFF) || (pen==PIXEL_ON) || (pen==PIXEL_XOR));
+	assert((pen==PIXEL_OFF) || (pen==PIXEL_ON));
 	g_drawingPen = pen;
 }
 

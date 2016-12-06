@@ -76,8 +76,7 @@ typedef enum
 typedef enum
 {
     PIXEL_OFF =  0,
-    PIXEL_ON  =  1,
-    PIXEL_XOR =  2
+    PIXEL_ON  =  1
 
 } LcdPixelMode;
 
