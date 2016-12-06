@@ -64,6 +64,7 @@ typedef unsigned int               word;
 /* Cache size in bytes ( 84 * 48 ) / 8 = 504 bytes */
 #define LCD_CACHE_SIZE             ( ( LCD_X_RES * LCD_Y_RES ) / 8)
 extern byte LcdCache [ LCD_CACHE_SIZE ];
+extern bool g_fillBar;
 
 /* Enumeration */
 typedef enum
@@ -103,9 +104,8 @@ void LcdSetPen ( LcdPixelMode pen );
 //void LcdUnsetPixel ( byte x, byte y );
 //byte LcdLine       ( byte x1, byte x2, byte y1, byte y2, LcdPixelMode mode );
 //byte LcdRect       ( byte x1, byte x2, byte y1, byte y2, LcdPixelMode mode );
-byte LcdSingleBar  ( byte baseX, byte baseY, byte height, byte width);
+byte LcdBar          ( byte baseX, byte baseY, byte height, byte width);
 //byte LcdBars       ( byte data[], byte numbBars, byte width, byte multiplier );
-void LcdBox		   (byte baseX, byte baseY, byte width, byte height);
 void LcdUpdate ( void );
 
 

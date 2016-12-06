@@ -89,42 +89,12 @@ void gameInit()
 	startTimer(65535-3902); // inform after 1 second period
 }
 
-void drawTile (uint8_t x, uint8_t y) // optimized to 72B
+void drawTile (uint8_t x, uint8_t y)
 {
-//	assert(x<8);
-//	assert(y<16);
+	assert(x<8);
+	assert(y<16);
 
-	uint16_t position = 336-(x>>1)*84+(y<<2);
-	uint32_t * addr = (uint32_t *)(&LcdCache[position]);
-	uint32_t stamp = 0x0F09090F; // x is odd, so we modify lower nibbles
-	if (!(x & 0x01))
-	{
-		stamp <<= 4; // x is even, so we modify upper nibbles
-	}
-	*addr |= stamp;
-
-	//uint16_t position = 336-(x>>1)*84+(y<<2);
-	//uint8_t * addr = &LcdCache[position];
-	//if (x & 0x01)
-	//{ // nieparzyste - mlodszy polbajt
-		//*addr |= 0x0F;
-		//++addr;
-		//*addr |= 0x09;
-		//++addr;
-		//*addr |= 0x09;
-		//++addr;
-		//*addr |= 0x0F;
-	//}
-	//else
-	//{ // parzyste - starszy polbajt
-		//*addr |= 0xF0;
-		//++addr;
-		//*addr |= 0x90;
-		//++addr;
-		//*addr |= 0x90;
-		//++addr;
-		//*addr |= 0xF0;
-	//}
+	LcdBar(y*4, 48-(8 + x*4)-4, 4,4);
 }
 
 void drawTileLinearly (uint8_t pos)
@@ -132,7 +102,7 @@ void drawTileLinearly (uint8_t pos)
 	assert(pos<8*16 || (pos>=NEXT_TETRIMINO_POSITION && pos<=(NEXT_TETRIMINO_POSITION+10)));
 	uint8_t x = pos & 0x07;
 	uint8_t y = pos >> 3;
-	LcdBox(y*4, 48-(8 + x*4)-4, 4,4);
+	LcdBar(y*4, 48-(8 + x*4)-4, 4,4);
 }
 
 // tetriminoId contains 3 bits of tetrimino number and 2 bits of orientation
@@ -289,12 +259,14 @@ void displayScene()
 	uint8_t x,y;
 	// display screen decoration
 	LcdClear();
+	g_fillBar = TRUE;
 	LcdSetPen(PIXEL_ON);
-	LcdSingleBar(0,0,72,48);
+	LcdBar(0,0,72,48);
 	LcdSetPen(PIXEL_OFF);
-	LcdSingleBar(0,7,65,34);
+	LcdBar(0,7,65,34);
 
 	// draw all tiles dropped till now
+	g_fillBar = FALSE;
 	LcdSetPen(PIXEL_ON);
 	for (y=0;y<16;++y)
 	{

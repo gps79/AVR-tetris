@@ -320,9 +320,11 @@ void LcdSetPen ( LcdPixelMode pen )
 	g_drawingPen = pen;
 }
 
+// global flag telling if to fill in the bar - TRUE, or not (i.e. draw empty box) - FALSE
+bool g_fillBar;
 
 /*
- * Name         :  LcdSingleBar
+ * Name         :  LcdBar
  * Description  :  Display single bar.
  * Argument(s)  :  baseX  -> absolute x axis coordinate
  *                 baseY  -> absolute y axis coordinate
@@ -331,7 +333,7 @@ void LcdSetPen ( LcdPixelMode pen )
  *				   mode   -> Off, On or Xor. See enum in pcd8544.h.
  * Return value :  see return value on pcd8544.h
  */
-byte LcdSingleBar ( byte baseX, byte baseY, byte width, byte height)
+byte LcdBar ( byte baseX, byte baseY, byte width, byte height)
 {
 	byte tmpIdxX,tmpIdxY;
 
@@ -344,36 +346,15 @@ byte LcdSingleBar ( byte baseX, byte baseY, byte width, byte height)
 	{
 		for ( tmpIdxX = baseX; tmpIdxX < (baseX + width); tmpIdxX++ )
         {
-			LcdSetPixel( tmpIdxX, tmpIdxY);
+			if (g_fillBar // draw filled in bar or
+				|| (tmpIdxX == baseX) || (tmpIdxX == (baseX + width -1)) || (tmpIdxY == baseY) || (tmpIdxY == (baseY + height -1))) // draw a box
+			{
+				LcdSetPixel( tmpIdxX, tmpIdxY);
+			}
         }
 	}
 
     return OK;
-}
-
-void LcdBox (byte baseX, byte baseY, byte width, byte height)
-{
-	assert(baseX < LCD_X_RES);
-	assert(baseY < LCD_Y_RES);
-	assert(baseX+width-1 < LCD_X_RES);
-	assert(baseY+height-1 < LCD_Y_RES);
-	byte y;
-
-	for (y=baseY+height-1; y>=baseY; --y)
-	{
-		LcdSetPixel( baseX, y);
-		LcdSetPixel( baseX+width-1, y);
-	}
-	if (width>2)
-	{
-		uint8_t t=width-2;
-		while (t)
-		{
-			LcdSetPixel( baseX+t, baseY);
-			LcdSetPixel( baseX+t, baseY+height-1);
-			--t;
-		}
-	}
 }
 
 void LcdUpdate ( void )
