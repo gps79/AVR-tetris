@@ -70,7 +70,6 @@
  #define __ASSERT_USE_STDERR
  //#define NDEBUG
 
-//#include <stdio.h>
 #include <avr/io.h>
 #include <string.h>
 #include <stdlib.h>
@@ -82,7 +81,6 @@
 /* Function prototypes */
 
 static void LcdSend    ( byte data, LcdCmdData cd );
-static void Delay      ( void );
 
 /* Global variables */
 
@@ -102,16 +100,16 @@ static LcdPixelMode g_drawingPen = PIXEL_ON;
 void LcdInit ( void )
 {
     /* Pull-up on reset pin. */
-    LCD_PORT |= _BV ( LCD_RST_PIN );
+//    LCD_PORT |= _BV ( LCD_RST_PIN ); // not needed ?? (works without this line)
 
     /* Set output bits on LCD Port. */
     LCD_DDR |= _BV( LCD_RST_PIN ) | _BV( LCD_DC_PIN ) | _BV( LCD_CE_PIN ) | _BV( SPI_MOSI_PIN ) | _BV( SPI_CLK_PIN );
 
-    Delay();
+//    Delay(); // not needed ?? (works without this line)
 
     /* Toggle display reset pin. */
-    LCD_PORT &= ~( _BV( LCD_RST_PIN ) );
-    Delay();
+//    LCD_PORT &= ~( _BV( LCD_RST_PIN ) ); // not needed ?? (works without this line)
+//    Delay(); // not needed ?? (works without this line)
     LCD_PORT |= _BV ( LCD_RST_PIN );
 
     /* Enable SPI port:
@@ -120,36 +118,14 @@ void LcdInit ( void )
     SPCR = 0x50;
 
     /* Disable LCD controller */
-    LCD_PORT |= _BV( LCD_CE_PIN );
+//    LCD_PORT |= _BV( LCD_CE_PIN ); // not needed ?? (works without this line)
 
-    LcdSend( 0x21, LCD_CMD ); /* LCD Extended Commands. */
-    LcdSend( 0xC8, LCD_CMD ); /* Set LCD Vop (Contrast).*/
-    LcdSend( 0x06, LCD_CMD ); /* Set Temp coefficent. */
-    LcdSend( 0x13, LCD_CMD ); /* LCD bias mode 1:48. */
+//    LcdSend( 0x21, LCD_CMD ); /* LCD Extended Commands. */  // not needed ?? (works without this line)
+//    LcdSend( 0xC8, LCD_CMD ); /* Set LCD Vop (Contrast).*/ // not needed ?? (works without this line)
+//    LcdSend( 0x06, LCD_CMD ); /* Set Temp coefficent. */ // not needed ?? (works without this line)
+//    LcdSend( 0x13, LCD_CMD ); /* LCD bias mode 1:48. */ // not needed ?? (works without this line)
     LcdSend( 0x20, LCD_CMD ); /* LCD Standard Commands,Horizontal addressing mode */
     LcdSend( 0x0C, LCD_CMD ); /* LCD in normal mode. */
-
-    /* Clear display on first time use */
-    LcdClear();
-    LcdUpdate();
-}
-
-/*
- * Name         :  LcdContrast
- * Description  :  Set display contrast.
- * Argument(s)  :  contrast -> Contrast value from 0x00 to 0x7F.
- * Return value :  None.
- */
-void LcdContrast ( byte contrast )
-{
-    /* LCD Extended Commands. */
-    LcdSend( 0x21, LCD_CMD );
-
-    /* Set LCD contrast level. */
-    LcdSend( 0x80 | contrast, LCD_CMD );
-
-    /* LCD Standard Commands, horizontal addressing mode. */
-    LcdSend( 0x20, LCD_CMD );
 }
 
 /*
@@ -320,47 +296,6 @@ byte LcdFStr ( LcdFontSize size, const byte *dataPtr )
     return OK;
 }
 
-void LcdPixel ( byte x, byte y, LcdPixelMode mode )
-{
-    word  index;
-    byte  offset;
-    byte  data;
-
-    /* Prevent from getting out of border */
-    assert( x < LCD_X_RES );
-    assert( y < LCD_Y_RES );
-
-    /* Recalculating index and offset */
-    index = ( ( y >> 3 ) * 84 ) + x;
-    offset  = y % 8;
-//    offset  = y - ( ( y / 8 ) * 8 );
-
-    data = LcdCache[ index ];
-
-    /* Bit processing */
-
-	/* Clear mode */
-    if ( mode == PIXEL_OFF )
-    {
-        data &= ( ~( 0x01 << offset ) );
-    }
-
-    /* On mode */
-    else if ( mode == PIXEL_ON )
-    {
-        data |= ( 0x01 << offset );
-    }
-
-    /* Xor mode */
-    else if ( mode  == PIXEL_XOR )
-    {
-        data ^= ( 0x01 << offset );
-    }
-
-    /* Final result copied to cache */
-    LcdCache[ index ] = data;
-}
-
 void LcdSetPixel ( byte x, byte y )
 {
 	word  index;
@@ -385,94 +320,6 @@ void LcdSetPen ( LcdPixelMode pen )
 	g_drawingPen = pen;
 }
 
-/*
- * Name         :  LcdLine
- * Description  :  Draws a line between two points on the display.
- * Argument(s)  :  x1, y1 -> Absolute pixel coordinates for line origin.
- *                 x2, y2 -> Absolute pixel coordinates for line end.
- *                 mode   -> Off, On or Xor. See enum in pcd8544.h.
- * Return value :  see return value on pcd8544.h
- */
-byte LcdLine ( byte x1, byte y1, byte x2, byte y2, LcdPixelMode mode )
-{
-    int dx, dy, stepx, stepy, fraction;
-
-    /* Calculate differential form */
-    /* dy   y2 - y1 */
-    /* -- = ------- */
-    /* dx   x2 - x1 */
-
-    /* Take differences */
-    dy = y2 - y1;
-    dx = x2 - x1;
-
-    /* dy is negative */
-    if ( dy < 0 )
-    {
-        dy    = -dy;
-        stepy = -1;
-    }
-    else
-    {
-        stepy = 1;
-    }
-
-    /* dx is negative */
-    if ( dx < 0 )
-    {
-        dx    = -dx;
-        stepx = -1;
-    }
-    else
-    {
-        stepx = 1;
-    }
-
-    dx <<= 1;
-    dy <<= 1;
-
-    /* Draw initial position */
-    LcdPixel( x1, y1, mode );
-
-    /* Draw next positions until end */
-    if ( dx > dy )
-    {
-        /* Take fraction */
-        fraction = dy - ( dx >> 1);
-        while ( x1 != x2 )
-        {
-            if ( fraction >= 0 )
-            {
-                y1 += stepy;
-                fraction -= dx;
-            }
-            x1 += stepx;
-            fraction += dy;
-
-            /* Draw calculated point */
-            LcdPixel( x1, y1, mode );
-        }
-    }
-    else
-    {
-        /* Take fraction */
-        fraction = dx - ( dy >> 1);
-        while ( y1 != y2 )
-        {
-            if ( fraction >= 0 )
-            {
-                x1 += stepx;
-                fraction -= dy;
-            }
-            y1 += stepy;
-            fraction += dx;
-
-            /* Draw calculated point */
-            LcdPixel( x1, y1, mode );
-        }
-    }
-    return OK;
-}
 
 /*
  * Name         :  LcdSingleBar
@@ -510,50 +357,13 @@ void LcdBox (byte baseX, byte baseY, byte width, byte height)
 	assert(baseY < LCD_Y_RES);
 	assert(baseX+width-1 < LCD_X_RES);
 	assert(baseY+height-1 < LCD_Y_RES);
-	//byte x,y;
 	byte y;
-	//for (y=baseY; y<baseY+height; y++)
-		//for (x=baseX; x<baseX+width; x++)
-			//if (x==baseX || x==baseX+width-1 || y==baseY || y==baseY+height-1)
-				//LcdPixel( x, y, mode );
-
-	//for (y=baseY; y<baseY+height; y++)
-	//{
-		//LcdPixel( baseX, y, mode );
-		//LcdPixel( baseX+width-1, y, mode );
-	//}
-	//for (x=baseX+1; x<baseX+width-1; x++)
-	//{
-		//LcdPixel( x, baseY, mode );
-		//LcdPixel( x, baseY+height-1, mode );
-	//}
 
 	for (y=baseY+height-1; y>=baseY; --y)
 	{
 		LcdSetPixel( baseX, y);
 		LcdSetPixel( baseX+width-1, y);
 	}
-
-	//if (height>0)	// +12B
-	//{
-		//uint8_t r = height-1;
-		//while (r)
-		//{
-			//LcdPixel( baseX, baseY+r, mode );
-			//LcdPixel( baseX+width-1, baseY+r, mode );
-			//--r;
-		//}
-	//}
-
-
-
-
-
-	//for (x=baseX+1; x<baseX+width-1; x++)
-	//{
-		//LcdPixel( x, baseY, mode );
-		//LcdPixel( x, baseY+height-1, mode );
-	//}
 	if (width>2)
 	{
 		uint8_t t=width-2;
@@ -564,84 +374,6 @@ void LcdBox (byte baseX, byte baseY, byte width, byte height)
 			--t;
 		}
 	}
-}
-
-/*
- * Name         :  LcdBars
- * Description  :  Display multiple bars.
- * Argument(s)  :  data[] -> data which want to be plotted
- *                 numbBars  -> number of bars want to be plotted
- *				   width  -> width of bar (in pixel)
- * Return value :  see return value on pcd8544.h
- * Note         :  Please check EMPTY_SPACE_BARS, BAR_X, BAR_Y in pcd8544.h
- */
-byte LcdBars ( byte data[], byte numbBars, byte width, byte multiplier )
-{
-	byte b;
-	byte tmpIdx = 0;
-    byte response;
-
-	LcdSetPen(PIXEL_ON);
-	for ( b = 0;  b < numbBars ; b++ )
-	{
-        /* Preventing from out of border (LCD_X_RES) */
-		if ( tmpIdx > LCD_X_RES ) return OUT_OF_BORDER;
-
-		/* Calculate x axis */
-		tmpIdx = ((width + EMPTY_SPACE_BARS) * b) + BAR_X;
-
-		/* Draw single bar */
-		response = LcdSingleBar( tmpIdx, BAR_Y, width, data[ b ] * multiplier);
-        if(response == OUT_OF_BORDER)
-            return response;
-	}
-
-    return OK;
-
-}
-/*
- * Name         :  LcdRect
- * Description  :  Display a rectangle.
- * Argument(s)  :  x1   -> absolute first x axis coordinate
- *                 y1   -> absolute first y axis coordinate
- *				   x2   -> absolute second x axis coordinate
- *				   y2   -> absolute second y axis coordinate
- *				   mode -> Off, On or Xor. See enum in pcd8544.h.
- * Return value :  see return value on pcd8544.h.
- */
-byte LcdRect ( byte x1, byte x2, byte y1, byte y2, LcdPixelMode mode )
-{
-	byte tmpIdxX,tmpIdxY;
-
-	/* Checking border */
-	if ( ( x1 > LCD_X_RES ) ||  ( x2 > LCD_X_RES ) || ( y1 > LCD_Y_RES ) || ( y2 > LCD_Y_RES ) )
-		/* If out of border then return */
-		return OUT_OF_BORDER;
-
-	if ( ( x2 > x1 ) && ( y2 > y1 ) )
-	{
-		for ( tmpIdxY = y1; tmpIdxY < y2; tmpIdxY++ )
-		{
-			/* Draw line horizontally */
-			for ( tmpIdxX = x1; tmpIdxX < x2; tmpIdxX++ )
-            {
-				/* Draw a pixel */
-				LcdPixel( tmpIdxX, tmpIdxY, mode );
-            }
-		}
-	}
-    return OK;
-}
-/*
- * Name         :  LcdImage
- * Description  :  Image mode display routine.
- * Argument(s)  :  Address of image in hexes
- * Return value :  None.
- * Example      :  LcdImage(&sample_image_declared_as_array);
- */
-void LcdImage ( const byte *imageData )
-{
-    memcpy_P(LcdCache,imageData,LCD_CACHE_SIZE);
 }
 
 void LcdUpdate ( void )
@@ -700,22 +432,9 @@ static void LcdSend ( byte data, LcdCmdData cd )
     LCD_PORT |= _BV( LCD_CE_PIN );
 }
 
-/*
- * Name         :  Delay
- * Description  :  Uncalibrated delay for LCD init routine.
- * Argument(s)  :  None.
- * Return value :  None.
- */
-static void Delay ( void )
-{
-    int i;
-
-    for ( i = -32000; i < 32000; i++ );
-}
 
 void __assert(const char *__file, int __lineno)
 {
-	//LcdClear();
 	LcdGotoXYFont(1,1);
 	LcdFStr(FONT_1X,(unsigned char*)PSTR("Assert:"));
 	LcdGotoXYFont(1,2);

@@ -91,20 +91,20 @@ typedef enum
 /* Function prototypes */
 void LcdInit       ( void );
 void LcdClear      ( void );
-void LcdImage      ( const byte *imageData );
-void LcdContrast   ( byte contrast);
+//void LcdImage      ( const byte *imageData );
+//void LcdContrast   ( byte contrast);
 byte LcdGotoXYFont ( byte x, byte y );
-byte LcdChr        ( LcdFontSize size, byte ch );
+//byte LcdChr        ( LcdFontSize size, byte ch );
 byte LcdStr        ( LcdFontSize size, byte dataArray[] );
-byte LcdFStr       ( LcdFontSize size, const byte *dataPtr );
-void LcdPixel      ( byte x, byte y, LcdPixelMode mode );
-void LcdSetPixel   ( byte x, byte y );
+//byte LcdFStr       ( LcdFontSize size, const byte *dataPtr );
+//void LcdPixel      ( byte x, byte y, LcdPixelMode mode );
+//void LcdSetPixel   ( byte x, byte y );
 void LcdSetPen ( LcdPixelMode pen );
-void LcdUnsetPixel ( byte x, byte y );
-byte LcdLine       ( byte x1, byte x2, byte y1, byte y2, LcdPixelMode mode );
-byte LcdRect       ( byte x1, byte x2, byte y1, byte y2, LcdPixelMode mode );
+//void LcdUnsetPixel ( byte x, byte y );
+//byte LcdLine       ( byte x1, byte x2, byte y1, byte y2, LcdPixelMode mode );
+//byte LcdRect       ( byte x1, byte x2, byte y1, byte y2, LcdPixelMode mode );
 byte LcdSingleBar  ( byte baseX, byte baseY, byte height, byte width);
-byte LcdBars       ( byte data[], byte numbBars, byte width, byte multiplier );
+//byte LcdBars       ( byte data[], byte numbBars, byte width, byte multiplier );
 void LcdBox		   (byte baseX, byte baseY, byte width, byte height);
 void LcdUpdate ( void );
 

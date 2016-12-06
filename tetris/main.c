@@ -78,7 +78,7 @@ void gameInit()
 			| (1 << ADEN);    // Enable the ADC
 
 	// init hardware buttons
-	DDRD = 0x00;
+	//	DDRD = 0x00; // not needed?? (works without this line) Atmega has this by default?
 
 	LcdInit();
 	currentTetrimino = (myrand()%7) << 2;
@@ -89,12 +89,42 @@ void gameInit()
 	startTimer(65535-3902); // inform after 1 second period
 }
 
-void drawTile (uint8_t x, uint8_t y)
+void drawTile (uint8_t x, uint8_t y) // optimized to 72B
 {
-	assert(x<8);
-	assert(y<16);
+//	assert(x<8);
+//	assert(y<16);
 
-	LcdBox(y*4, x*4+8, 4,4);
+	uint16_t position = 336-(x>>1)*84+(y<<2);
+	uint32_t * addr = (uint32_t *)(&LcdCache[position]);
+	uint32_t stamp = 0x0F09090F; // x is odd, so we modify lower nibbles
+	if (!(x & 0x01))
+	{
+		stamp <<= 4; // x is even, so we modify upper nibbles
+	}
+	*addr |= stamp;
+
+	//uint16_t position = 336-(x>>1)*84+(y<<2);
+	//uint8_t * addr = &LcdCache[position];
+	//if (x & 0x01)
+	//{ // nieparzyste - mlodszy polbajt
+		//*addr |= 0x0F;
+		//++addr;
+		//*addr |= 0x09;
+		//++addr;
+		//*addr |= 0x09;
+		//++addr;
+		//*addr |= 0x0F;
+	//}
+	//else
+	//{ // parzyste - starszy polbajt
+		//*addr |= 0xF0;
+		//++addr;
+		//*addr |= 0x90;
+		//++addr;
+		//*addr |= 0x90;
+		//++addr;
+		//*addr |= 0xF0;
+	//}
 }
 
 void drawTileLinearly (uint8_t pos)
@@ -270,7 +300,7 @@ void displayScene()
 	{
 		for (x=0;x<8;++x)
 		{
-			if (matrix[y]&(1<<x))
+			if (matrix[y]&(0x80>>x))
 			{
 				drawTile(x,y);
 			}
