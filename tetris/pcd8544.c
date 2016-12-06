@@ -299,17 +299,20 @@ byte LcdFStr ( LcdFontSize size, const byte *dataPtr )
 void LcdSetPixel ( byte x, byte y )
 {
 	word  index;
-	byte  offset;
+	byte  bitMask;
 
 	assert( x < LCD_X_RES );
 	assert( y < LCD_Y_RES );
 
 	index = ( ( y >> 3 ) * 84 ) + x;
-	offset  = y % 8;
+	bitMask = 0x01 << (y & 0x07);
+	uint8_t *addr = &LcdCache[ index ];
+	uint8_t value = *addr; // splitting LcdCache[ index ] |= bitMask;  helps compiler to optimize (saved 2B)
 	if (PIXEL_ON == g_drawingPen)
-		LcdCache[ index ] |= ( 0x01 << offset );
+		value |= bitMask;
 	else
-		LcdCache[ index ] &= ( ~( 0x01 << offset ));
+		value &= ( ~bitMask);
+	*addr = value;
 }
 
 void LcdSetPen ( LcdPixelMode pen )
