@@ -475,7 +475,7 @@ byte LcdLine ( byte x1, byte y1, byte x2, byte y2, LcdPixelMode mode )
 }
 
 /*
- * Name         :  LcdSingleBar
+ * Name         :  LcdBar
  * Description  :  Display single bar.
  * Argument(s)  :  baseX  -> absolute x axis coordinate
  *                 baseY  -> absolute y axis coordinate
@@ -484,7 +484,8 @@ byte LcdLine ( byte x1, byte y1, byte x2, byte y2, LcdPixelMode mode )
  *				   mode   -> Off, On or Xor. See enum in pcd8544.h.
  * Return value :  see return value on pcd8544.h
  */
-byte LcdSingleBar ( byte baseX, byte baseY, byte width, byte height)
+bool g_fillBar;
+byte LcdBar ( byte baseX, byte baseY, byte width, byte height)
 {
 	byte tmpIdxX,tmpIdxY;
 
@@ -497,73 +498,15 @@ byte LcdSingleBar ( byte baseX, byte baseY, byte width, byte height)
 	{
 		for ( tmpIdxX = baseX; tmpIdxX < (baseX + width); tmpIdxX++ )
         {
-			LcdSetPixel( tmpIdxX, tmpIdxY);
+			if (g_fillBar // draw filled in bar or
+				|| (tmpIdxX == baseX) || (tmpIdxX == (baseX + width -1)) || (tmpIdxY == baseY) || (tmpIdxY == (baseY + height -1))) // draw a box
+			{
+				LcdSetPixel( tmpIdxX, tmpIdxY);
+			}
         }
 	}
 
     return OK;
-}
-
-void LcdBox (byte baseX, byte baseY, byte width, byte height)
-{
-	assert(baseX < LCD_X_RES);
-	assert(baseY < LCD_Y_RES);
-	assert(baseX+width-1 < LCD_X_RES);
-	assert(baseY+height-1 < LCD_Y_RES);
-	//byte x,y;
-	byte y;
-	//for (y=baseY; y<baseY+height; y++)
-		//for (x=baseX; x<baseX+width; x++)
-			//if (x==baseX || x==baseX+width-1 || y==baseY || y==baseY+height-1)
-				//LcdPixel( x, y, mode );
-
-	//for (y=baseY; y<baseY+height; y++)
-	//{
-		//LcdPixel( baseX, y, mode );
-		//LcdPixel( baseX+width-1, y, mode );
-	//}
-	//for (x=baseX+1; x<baseX+width-1; x++)
-	//{
-		//LcdPixel( x, baseY, mode );
-		//LcdPixel( x, baseY+height-1, mode );
-	//}
-
-	for (y=baseY+height-1; y>=baseY; --y)
-	{
-		LcdSetPixel( baseX, y);
-		LcdSetPixel( baseX+width-1, y);
-	}
-
-	//if (height>0)	// +12B
-	//{
-		//uint8_t r = height-1;
-		//while (r)
-		//{
-			//LcdPixel( baseX, baseY+r, mode );
-			//LcdPixel( baseX+width-1, baseY+r, mode );
-			//--r;
-		//}
-	//}
-
-
-
-
-
-	//for (x=baseX+1; x<baseX+width-1; x++)
-	//{
-		//LcdPixel( x, baseY, mode );
-		//LcdPixel( x, baseY+height-1, mode );
-	//}
-	if (width>2)
-	{
-		uint8_t t=width-2;
-		while (t)
-		{
-			LcdSetPixel( baseX+t, baseY);
-			LcdSetPixel( baseX+t, baseY+height-1);
-			--t;
-		}
-	}
 }
 
 /*
@@ -590,8 +533,8 @@ byte LcdBars ( byte data[], byte numbBars, byte width, byte multiplier )
 		/* Calculate x axis */
 		tmpIdx = ((width + EMPTY_SPACE_BARS) * b) + BAR_X;
 
-		/* Draw single bar */
-		response = LcdSingleBar( tmpIdx, BAR_Y, width, data[ b ] * multiplier);
+		/* Draw a bar */
+		response = LcdBar( tmpIdx, BAR_Y, width, data[ b ] * multiplier);
         if(response == OUT_OF_BORDER)
             return response;
 	}
