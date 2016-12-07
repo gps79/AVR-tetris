@@ -7,14 +7,11 @@
 #define SHOW_GAME_OVER FALSE
 #define TETRIMINOS_AS_BOXES FALSE
 
-# define F_CPU 4000000UL
-
 #define __ASSERT_USE_STDERR
 //#define NDEBUG
 
 #include <avr/io.h>
 #include <avr/pgmspace.h>
-#include <util/delay.h>
 #include <stdlib.h>
 #include <string.h>
 #include "my_assert.h"
@@ -94,7 +91,7 @@ static void gameInit()
 	randomizeNextTetrimino();
 
 	// initialize the timer
-	startTimer(65535-3902); // inform after 1 second period
+	startTimer(65535-975); // inform after 1 second period
 }
 
 static void drawTile (uint8_t x, uint8_t y)
@@ -312,8 +309,25 @@ static void displayScene()
 	LcdUpdate(); // draw from buffer to the LCD
 }
 
-int main()
+static void mydelay()
 {
+	uint16_t t = 12000;
+	while (--t)
+	{
+		asm volatile("nop");
+	}
+}
+
+//#define MCU_TROUBLESHOOTING
+#ifdef MCU_TROUBLESHOOTING
+#define LEDON (PORTC |=(1<<5))
+#define LEDOFF (PORTC &= ~(1 << 5))
+#endif // MCU_TROUBLESHOOTING
+int main() 
+{
+	#ifdef MCU_TROUBLESHOOTING
+	DDRC = 0xFF;while(1){LEDON;_delay_ms(500);LEDOFF;_delay_ms(500);}
+	#endif // MCU_TROUBLESHOOTING
 	gameInit();
 
 	bool isDelay = FALSE;
@@ -322,7 +336,7 @@ int main()
 		displayScene();
 		if (isDelay)
 		{
-			_delay_ms(200);
+			mydelay();
 			isDelay = FALSE;
 		}
 
@@ -400,14 +414,14 @@ int main()
 		if (DOWN_BUTTON_PRESSED)
 		{
 			moveTetriminoDown();
-			startTimer(65535-3902); // inform after 1 second period
+			startTimer(65535-975); // inform after 1 second period
 			isDelay = TRUE;
 		}
 
 		if (TIMER_HAS_EXPIRED)
 		{
 			moveTetriminoDown();
-			startTimer(65535-3902); // inform after 1 second period
+			startTimer(65535-975); // inform after 1 second period
 		}
 	}	
 	return 0;
