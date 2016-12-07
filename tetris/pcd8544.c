@@ -16,21 +16,7 @@
  *
  */
 
- #define __ASSERT_USE_STDERR
- //#define NDEBUG
-
-#include <avr/io.h>
-#include <string.h>
-#include <stdlib.h>
-#include <avr/pgmspace.h>
-#include <avr/interrupt.h>
-#include "my_assert.h"
-#include "pcd8544.h"
-
-/* Function prototypes */
-
-static void LcdSend    ( uint8_t data );
-
+ 
 /* Global variables */
 
 /* Cache buffer in SRAM 84*48 bits or 504 bytes */
@@ -46,7 +32,7 @@ static LcdPixelMode g_drawingPen = PIXEL_ON;
  * Argument(s)  :  None.
  * Return value :  None.
  */
-void LcdInit ( void )
+static void LcdInit ( void ) // once static it will be built-in as inline
 {
     /* Pull-up on reset pin. */
 //    LCD_PORT |= _BV ( LCD_RST_PIN ); // not needed ?? (works without this line)
@@ -77,17 +63,103 @@ void LcdInit ( void )
     LcdSend( 0x0C ); /* LCD in normal mode. */
 }
 
-/*
- * Name         :  LcdClear
- * Description  :  Clears the display. LcdUpdate must be called next.
- * Argument(s)  :  None.
- * Return value :  None.
- * Note         :  Based on Sylvain Bissonette's code
- */
-void LcdClear ( void )
+static void LcdUpdate ( void )
 {
-	memset(LcdCache,0x00,LCD_CACHE_SIZE);
+	// Set base address to position (0,0).
+	LcdSend( 0x80 );
+	LcdSend( 0x40 );
+
+	uint8_t *byteToSend = LcdCache;
+	uint16_t i = 504;
+	LCD_SET_DATA_SENDING_MODE;
+	while (i)
+	{
+		LcdSend( *byteToSend );
+		--i;
+		byteToSend++;
+	}
+	LCD_SET_COMMANDS_SENDING_MODE;
 }
+
+static void LcdSetPixel ( uint8_t x, uint8_t y )
+{
+	uint16_t  index;
+	uint8_t  bitMask;
+
+	assert( x < LCD_X_RES );
+	assert( y < LCD_Y_RES );
+
+	index = ( ( y >> 3 ) * 84 ) + x;
+	bitMask = 0x01 << (y & 0x07);
+	uint8_t *addr = &LcdCache[ index ];
+	uint8_t value = *addr; // splitting LcdCache[ index ] |= bitMask;  helps compiler to optimize (saved 2B)
+	if (PIXEL_ON == g_drawingPen)
+		value |= bitMask;
+	else
+		value &= ( ~bitMask);
+	*addr = value;
+}
+
+static void LcdSetPen ( LcdPixelMode pen )
+{
+	assert((pen==PIXEL_OFF) || (pen==PIXEL_ON));
+	g_drawingPen = pen;
+}
+
+/*
+ * Name         :  LcdBar
+ * Description  :  Display single bar.
+ * Argument(s)  :  baseX  -> absolute x axis coordinate
+ *                 baseY  -> absolute y axis coordinate
+ *				   width  -> width of bar (in pixel)
+ *				   height -> height of bar (in pixel)
+ */
+static void LcdBar ( uint8_t baseX, uint8_t baseY, uint8_t width, uint8_t height)
+{
+	assert(baseX < LCD_X_RES);
+	assert(baseY < LCD_Y_RES);
+	assert(baseX+width <= LCD_X_RES);
+	assert(baseY+height <= LCD_Y_RES);
+
+	while (height)
+	{
+		uint8_t x = baseX;
+		uint8_t xCounter = width;
+		while (xCounter)
+		{
+			LcdSetPixel( x, baseY);
+			++x;
+			--xCounter;
+		}
+		++baseY;
+		--height;
+	}
+}
+
+/*
+ * Name         :  LcdSend
+ * Description  :  Sends data to display controller.
+ * Argument(s)  :  data -> Data to be sent
+ *                 cd   -> Command or data (see enum in pcd8544.h)
+ * Return value :  None.
+ */
+static void LcdSend ( uint8_t data )
+{
+	 /*  Enable display controller (active low). */
+	 //    LCD_PORT &= ~( _BV( LCD_CE_PIN ) ); // not needed ?? (works without this line)
+
+	 /*  Send data to display controller. */
+	 SPDR = data;
+
+	 /*  Wait until Tx register empty. */
+	 while ( !(SPSR & 0x80) );
+	 /* Disable display controller. */
+	 //    LCD_PORT |= _BV( LCD_CE_PIN ); // not needed ?? (works without this line)
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// supporting functions; not used in "release"
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
  * Name         :  LcdGotoXYFont
@@ -97,7 +169,7 @@ void LcdClear ( void )
  * Return value :  see return value in pcd8544.h
  * Note         :  Based on Sylvain Bissonette's code
  */
-uint8_t LcdGotoXYFont ( uint8_t x, uint8_t y )
+static uint8_t LcdGotoXYFont ( uint8_t x, uint8_t y )
 {
     /* Boundary check, slow down the speed but will guarantee this code wont fail */
     /* Version 0.2.5 - Fixed on Dec 25, 2008 (XMAS) */
@@ -119,7 +191,7 @@ uint8_t LcdGotoXYFont ( uint8_t x, uint8_t y )
  *                 ch   -> Character to write.
  * Return value :  see pcd8544.h about return value
  */
-uint8_t LcdChr ( LcdFontSize size, uint8_t ch )
+static uint8_t LcdChr ( LcdFontSize size, uint8_t ch )
 {
     uint8_t i, c;
     uint8_t b1, b2;
@@ -199,7 +271,7 @@ uint8_t LcdChr ( LcdFontSize size, uint8_t ch )
  *                              into cache.
  * Return value :  see return value on pcd8544.h
  */
-uint8_t LcdStr ( LcdFontSize size, uint8_t dataArray[] )
+static uint8_t LcdStr ( LcdFontSize size, uint8_t dataArray[] )
 {
     uint8_t tmpIdx=0;
     uint8_t response;
@@ -230,7 +302,7 @@ uint8_t LcdStr ( LcdFontSize size, uint8_t dataArray[] )
  * Example      :  LcdFStr(FONT_1X, PSTR("Hello World"));
  *                 LcdFStr(FONT_1X, &name_of_string_as_array);
  */
-uint8_t LcdFStr ( LcdFontSize size, const uint8_t *dataPtr )
+static uint8_t LcdFStr ( LcdFontSize size, const uint8_t *dataPtr )
 {
     uint8_t c;
     uint8_t response;
@@ -241,104 +313,8 @@ uint8_t LcdFStr ( LcdFontSize size, const uint8_t *dataPtr )
         if(response == OUT_OF_BORDER)
             return OUT_OF_BORDER;
     }
-	/* Fixed by Jakub Lasinski. Version 0.2.6, March 14, 2009 */
     return OK;
 }
-
-void LcdSetPixel ( uint8_t x, uint8_t y )
-{
-	uint16_t  index;
-	uint8_t  bitMask;
-
-	assert( x < LCD_X_RES );
-	assert( y < LCD_Y_RES );
-
-	index = ( ( y >> 3 ) * 84 ) + x;
-	bitMask = 0x01 << (y & 0x07);
-	uint8_t *addr = &LcdCache[ index ];
-	uint8_t value = *addr; // splitting LcdCache[ index ] |= bitMask;  helps compiler to optimize (saved 2B)
-	if (PIXEL_ON == g_drawingPen)
-		value |= bitMask;
-	else
-		value &= ( ~bitMask);
-	*addr = value;
-}
-
-void LcdSetPen ( LcdPixelMode pen )
-{
-	assert((pen==PIXEL_OFF) || (pen==PIXEL_ON));
-	g_drawingPen = pen;
-}
-
-/*
- * Name         :  LcdBar
- * Description  :  Display single bar.
- * Argument(s)  :  baseX  -> absolute x axis coordinate
- *                 baseY  -> absolute y axis coordinate
- *				   width  -> width of bar (in pixel)
- *				   height -> height of bar (in pixel)
- */
-void LcdBar ( uint8_t baseX, uint8_t baseY, uint8_t width, uint8_t height)
-{
-	assert(baseX < LCD_X_RES);
-	assert(baseY < LCD_Y_RES);
-	assert(baseX+width <= LCD_X_RES);
-	assert(baseY+height <= LCD_Y_RES);
-
-	while (height)
-	{
-		uint8_t x = baseX;
-		uint8_t xCounter = width;
-		while (xCounter)
-		{
-			LcdSetPixel( x, baseY);
-			++x;
-			--xCounter;
-		}
-		++baseY;
-		--height;
-	}
-}
-
-void LcdUpdate ( void )
-{
-	// Set base address to position (0,0).
-	LcdSend( 0x80 );
-	LcdSend( 0x40 );
-
-	uint8_t *byteToSend = LcdCache;
-	uint16_t i = 504;
-	LCD_SET_DATA_SENDING_MODE;
-	while (i)
-	{
-		LcdSend( *byteToSend );
-		--i;
-		byteToSend++;
-	}
-	LCD_SET_COMMANDS_SENDING_MODE;
-}
-
-/*
- * Name         :  LcdSend
- * Description  :  Sends data to display controller.
- * Argument(s)  :  data -> Data to be sent
- *                 cd   -> Command or data (see enum in pcd8544.h)
- * Return value :  None.
- */
-static void LcdSend ( uint8_t data )
-{
-    /*  Enable display controller (active low). */
-//    LCD_PORT &= ~( _BV( LCD_CE_PIN ) ); // not needed ?? (works without this line)
-
-    /*  Send data to display controller. */
-    SPDR = data;
-
-    /*  Wait until Tx register empty. */
-    while ( !(SPSR & 0x80) );
-    /* Disable display controller. */
-//    LCD_PORT |= _BV( LCD_CE_PIN ); // not needed ?? (works without this line)
-}
-
 
 void __assert(const char *__file, int __lineno)
 {
@@ -353,3 +329,4 @@ void __assert(const char *__file, int __lineno)
 	LcdUpdate();
 	while (1){}
 }
+

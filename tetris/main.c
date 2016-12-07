@@ -16,9 +16,11 @@
 #include <avr/pgmspace.h>
 #include <util/delay.h>
 #include <stdlib.h>
+#include <string.h>
 #include "my_assert.h"
 
 #include "pcd8544.h"
+#include "pcd8544.c"
 
 uint8_t tetriminos[7][4] = { // there are 7 tetriminos, each of them has 4 orientations (0, 90deg., 180deg., and 270deg.)
 	{ 0xE0, 0x92, 0xE0, 0x92}, // I is only 3 blocks long due to optimization
@@ -64,20 +66,20 @@ static uint8_t myrand() // the cost is 30B (this function + ADC initialization)
 	return randomNumber;
 }
 
-void startTimer(uint16_t delay)
+static void startTimer(uint16_t delay)
 {
 	TIFR |= (1 << TOV1); // reset the overflow flag (by writing '1')
 	TCNT1 = delay;
 	TCCR1B = (1 << CS10) | (1 << CS12); // start the timer by setting 1024 prescaler
 }
 
-void randomizeNextTetrimino()
+static void randomizeNextTetrimino()
 {
 	currentTetrimino = nextTetrimino;
 	currentTetriminoPosition = 3; // top middle initial position of current tetrimino
 	nextTetrimino = (myrand()%7) << 2;
 }
-void gameInit()
+static void gameInit()
 {
 	// init ADC0 which supports random number generator
 	ADMUX = (1 << REFS0) | (1 << REFS1); // ADC0 + internal 2.56V reference
@@ -95,7 +97,7 @@ void gameInit()
 	startTimer(65535-3902); // inform after 1 second period
 }
 
-void drawTile (uint8_t x, uint8_t y)
+static void drawTile (uint8_t x, uint8_t y)
 {
 	assert(x<8);
 	assert(y<21);
@@ -112,7 +114,7 @@ void drawTile (uint8_t x, uint8_t y)
 	}
 }
 
-void drawTileLinearly (uint8_t pos)
+static void drawTileLinearly (uint8_t pos)
 {
 	assert(pos<8*16 || (pos>=NEXT_TETRIMINO_POSITION && pos<=(NEXT_TETRIMINO_POSITION+10)));
 	uint8_t x = pos & 0x07;
@@ -128,7 +130,7 @@ void drawTileLinearly (uint8_t pos)
 //   bits in position:     MSB  0RRRRCCC LSB
 //                              RRRR - 4 bits of row number (values 0-15)
 //                               CCC - 3 bits of column number (values 0-7)
-void drawTetrimino(uint8_t tetriminoId, uint8_t position)
+static void drawTetrimino(uint8_t tetriminoId, uint8_t position)
 {
 	uint8_t x,y,bitMask;
 	assert(tetriminoId<7*4);
@@ -164,7 +166,7 @@ void drawTetrimino(uint8_t tetriminoId, uint8_t position)
 // When storePermanently==true:
 //   it behaves like a procedure which stores given "tetrimino" in "position" in the "matrix".
 //   To run in this mode you have to be sure that you can store the "tetrimino" in the "position" by running this function in storePermanently==false mode first
-bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, bool storePermanently)
+static bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, bool storePermanently)
 {
 	assert(position<136);
 	assert(tetrimino<7*4);
@@ -220,7 +222,7 @@ bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, bool storePermanentl
 	return TRUE;
 }
 
-void moveTetriminoDown()
+static void moveTetriminoDown()
 {
 	uint8_t newPosition = currentTetriminoPosition+8; // next row
 	if (canPlaceTetrimino(currentTetrimino, newPosition, FALSE))
@@ -267,10 +269,11 @@ void moveTetriminoDown()
 	}
 }
 
-void displayScene()
+static void displayScene()
 {
 	// display screen decoration
-	LcdClear();
+	memset(LcdCache,0x00,LCD_CACHE_SIZE); // LcdClear();
+
 	LcdSetPen(PIXEL_ON);
 	LcdBar(0,0,72,48);
 	LcdSetPen(PIXEL_OFF);
