@@ -5,6 +5,7 @@
  * Author : Grzegorz Pietrusiak
  */ 
 #define SHOW_GAME_OVER FALSE
+#define TETRIMINOS_AS_BOXES FALSE
 
 # define F_CPU 4000000UL
 
@@ -103,9 +104,12 @@ void drawTile (uint8_t x, uint8_t y)
 	uint8_t scrY = 48-(8 + x*4)-4;
 
 	LcdBar(scrX, scrY, 4,4);
-	LcdSetPen(PIXEL_OFF);
-	LcdBar(scrX+1, scrY+1, 2,2);
-	LcdSetPen(PIXEL_ON);
+	if (TETRIMINOS_AS_BOXES) // -32B
+	{
+		LcdSetPen(PIXEL_OFF);
+		LcdBar(scrX+1, scrY+1, 2,2);
+		LcdSetPen(PIXEL_ON);
+	}
 }
 
 void drawTileLinearly (uint8_t pos)
