@@ -359,14 +359,7 @@ void LcdUpdate ( void )
 
 	// 504 bytes to send. we split it for two loops: 255 and 249 iterations
 	byte *byteToSend = LcdCache;
-	uint8_t i = 255;
-	while (i)
-	{
-		LcdSend( *byteToSend, LCD_DATA );
-		--i;
-		byteToSend++;
-	}
-	i = 249;
+	uint16_t i = 504;
 	while (i)
 	{
 		LcdSend( *byteToSend, LCD_DATA );
