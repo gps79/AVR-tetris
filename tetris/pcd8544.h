@@ -48,6 +48,8 @@
 #define LCD_PORT                   PORTB
 #define LCD_DDR                    DDRB
 
+typedef uint8_t bool;
+
 /* ATMega8 port pinout for LCD. */
 /* 0.2.6 bug, fixed */
 #define LCD_DC_PIN                 PB0  /* Pin 0 */
@@ -56,14 +58,9 @@
 #define LCD_RST_PIN                PB4  /* Pin 4 */
 #define SPI_CLK_PIN                PB5  /* Pin 5 */
 
-/* Type definition */
-typedef char                       bool;
-typedef unsigned char              byte;
-typedef unsigned int               word;
-
 /* Cache size in bytes ( 84 * 48 ) / 8 = 504 bytes */
 #define LCD_CACHE_SIZE             ( ( LCD_X_RES * LCD_Y_RES ) / 8)
-extern byte LcdCache [ LCD_CACHE_SIZE ];
+extern uint8_t LcdCache [ LCD_CACHE_SIZE ];
 
 #define LCD_SET_DATA_SENDING_MODE (LCD_PORT |= _BV( LCD_DC_PIN ))
 #define LCD_SET_COMMANDS_SENDING_MODE (LCD_PORT &= ~( _BV( LCD_DC_PIN ) ))
@@ -85,10 +82,10 @@ typedef enum
 /* Function prototypes */
 void LcdInit       ( void );
 void LcdClear      ( void );
-byte LcdGotoXYFont ( byte x, byte y );
-byte LcdStr        ( LcdFontSize size, byte dataArray[] );
+uint8_t LcdGotoXYFont ( uint8_t x, uint8_t y );
+uint8_t LcdStr        ( LcdFontSize size, uint8_t dataArray[] );
 void LcdSetPen ( LcdPixelMode pen );
-void LcdBar          ( byte baseX, byte baseY, byte height, byte width);
+void LcdBar          ( uint8_t baseX, uint8_t baseY, uint8_t height, uint8_t width);
 void LcdUpdate ( void );
 
 
@@ -97,7 +94,7 @@ void LcdUpdate ( void );
  * Character lookup table code was taken from the work of Sylvain Bissonette
  * This table defines the standard ASCII characters in a 5x7 dot format.
  */
-static const byte FontLookup [][5] PROGMEM=
+static const uint8_t FontLookup [][5] PROGMEM=
 {
     { 0x00, 0x00, 0x00, 0x00, 0x00 },   /* space */
     { 0x00, 0x00, 0x2f, 0x00, 0x00 },   /* ! */

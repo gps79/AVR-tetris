@@ -29,12 +29,12 @@
 
 /* Function prototypes */
 
-static void LcdSend    ( byte data );
+static void LcdSend    ( uint8_t data );
 
 /* Global variables */
 
 /* Cache buffer in SRAM 84*48 bits or 504 bytes */
-byte LcdCache [ LCD_CACHE_SIZE ];
+uint8_t LcdCache [ LCD_CACHE_SIZE ];
 
 /* Cache index */
 static int   LcdCacheIdx;
@@ -97,7 +97,7 @@ void LcdClear ( void )
  * Return value :  see return value in pcd8544.h
  * Note         :  Based on Sylvain Bissonette's code
  */
-byte LcdGotoXYFont ( byte x, byte y )
+uint8_t LcdGotoXYFont ( uint8_t x, uint8_t y )
 {
     /* Boundary check, slow down the speed but will guarantee this code wont fail */
     /* Version 0.2.5 - Fixed on Dec 25, 2008 (XMAS) */
@@ -119,10 +119,10 @@ byte LcdGotoXYFont ( byte x, byte y )
  *                 ch   -> Character to write.
  * Return value :  see pcd8544.h about return value
  */
-byte LcdChr ( LcdFontSize size, byte ch )
+uint8_t LcdChr ( LcdFontSize size, uint8_t ch )
 {
-    byte i, c;
-    byte b1, b2;
+    uint8_t i, c;
+    uint8_t b1, b2;
     int  tmpIdx;
 
     if ( (ch < 0x20) || (ch > 0x7b) )
@@ -199,10 +199,10 @@ byte LcdChr ( LcdFontSize size, byte ch )
  *                              into cache.
  * Return value :  see return value on pcd8544.h
  */
-byte LcdStr ( LcdFontSize size, byte dataArray[] )
+uint8_t LcdStr ( LcdFontSize size, uint8_t dataArray[] )
 {
-    byte tmpIdx=0;
-    byte response;
+    uint8_t tmpIdx=0;
+    uint8_t response;
     while( dataArray[ tmpIdx ] != '\0' )
 	{
         /* Send char */
@@ -230,10 +230,10 @@ byte LcdStr ( LcdFontSize size, byte dataArray[] )
  * Example      :  LcdFStr(FONT_1X, PSTR("Hello World"));
  *                 LcdFStr(FONT_1X, &name_of_string_as_array);
  */
-byte LcdFStr ( LcdFontSize size, const byte *dataPtr )
+uint8_t LcdFStr ( LcdFontSize size, const uint8_t *dataPtr )
 {
-    byte c;
-    byte response;
+    uint8_t c;
+    uint8_t response;
     for ( c = pgm_read_byte( dataPtr ); c; ++dataPtr, c = pgm_read_byte( dataPtr ) )
     {
         /* Put char */
@@ -245,10 +245,10 @@ byte LcdFStr ( LcdFontSize size, const byte *dataPtr )
     return OK;
 }
 
-void LcdSetPixel ( byte x, byte y )
+void LcdSetPixel ( uint8_t x, uint8_t y )
 {
-	word  index;
-	byte  bitMask;
+	uint16_t  index;
+	uint8_t  bitMask;
 
 	assert( x < LCD_X_RES );
 	assert( y < LCD_Y_RES );
@@ -278,7 +278,7 @@ void LcdSetPen ( LcdPixelMode pen )
  *				   width  -> width of bar (in pixel)
  *				   height -> height of bar (in pixel)
  */
-void LcdBar ( byte baseX, byte baseY, byte width, byte height)
+void LcdBar ( uint8_t baseX, uint8_t baseY, uint8_t width, uint8_t height)
 {
 	assert(baseX < LCD_X_RES);
 	assert(baseY < LCD_Y_RES);
@@ -287,8 +287,8 @@ void LcdBar ( byte baseX, byte baseY, byte width, byte height)
 
 	while (height)
 	{
-		byte x = baseX;
-		byte xCounter = width;
+		uint8_t x = baseX;
+		uint8_t xCounter = width;
 		while (xCounter)
 		{
 			LcdSetPixel( x, baseY);
@@ -306,7 +306,7 @@ void LcdUpdate ( void )
 	LcdSend( 0x80 );
 	LcdSend( 0x40 );
 
-	byte *byteToSend = LcdCache;
+	uint8_t *byteToSend = LcdCache;
 	uint16_t i = 504;
 	LCD_SET_DATA_SENDING_MODE;
 	while (i)
@@ -325,7 +325,7 @@ void LcdUpdate ( void )
  *                 cd   -> Command or data (see enum in pcd8544.h)
  * Return value :  None.
  */
-static void LcdSend ( byte data )
+static void LcdSend ( uint8_t data )
 {
     /*  Enable display controller (active low). */
 //    LCD_PORT &= ~( _BV( LCD_CE_PIN ) ); // not needed ?? (works without this line)
