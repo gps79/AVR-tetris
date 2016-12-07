@@ -68,14 +68,6 @@ extern byte LcdCache [ LCD_CACHE_SIZE ];
 #define LCD_SET_DATA_SENDING_MODE (LCD_PORT |= _BV( LCD_DC_PIN ))
 #define LCD_SET_COMMANDS_SENDING_MODE (LCD_PORT &= ~( _BV( LCD_DC_PIN ) ))
 
-/* Enumeration */
-typedef enum
-{
-    LCD_CMD  = 0,
-    LCD_DATA = 1
-
-} LcdCmdData;
-
 typedef enum
 {
     PIXEL_OFF =  0,
