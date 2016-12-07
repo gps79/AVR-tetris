@@ -36,49 +36,32 @@ static void LcdInit ( void ) // once static it will be built-in as inline
 {
     /* Pull-up on reset pin. */
 //    LCD_PORT |= _BV ( LCD_RST_PIN ); // not needed ?? (works without this line)
-
     /* Set output bits on LCD Port. */
     LCD_DDR |= _BV( LCD_RST_PIN ) | _BV( LCD_DC_PIN ) | _BV( LCD_CE_PIN ) | _BV( SPI_MOSI_PIN ) | _BV( SPI_CLK_PIN );
-
-//    Delay(); // not needed ?? (works without this line)
-
     /* Toggle display reset pin. */
-//    LCD_PORT &= ~( _BV( LCD_RST_PIN ) ); // not needed ?? (works without this line)
-//    Delay(); // not needed ?? (works without this line)
     LCD_PORT |= _BV ( LCD_RST_PIN );
 
-    /* Enable SPI port:
-    * No interrupt, MSBit first, Master mode, CPOL->0, CPHA->0, Clk/4
-    */
+    // Enable SPI port: No interrupt, MSBit first, Master mode, CPOL->0, CPHA->0, Clk/4
     SPCR = 0x50;
 
     /* Disable LCD controller */
 //    LCD_PORT |= _BV( LCD_CE_PIN ); // not needed ?? (works without this line)
 	LCD_SET_COMMANDS_SENDING_MODE;
-//    LcdSend( 0x21, LCD_CMD ); /* LCD Extended Commands. */  // not needed ?? (works without this line)
-//    LcdSend( 0xC8, LCD_CMD ); /* Set LCD Vop (Contrast).*/ // not needed ?? (works without this line)
-//    LcdSend( 0x06, LCD_CMD ); /* Set Temp coefficent. */ // not needed ?? (works without this line)
-//    LcdSend( 0x13, LCD_CMD ); /* LCD bias mode 1:48. */ // not needed ?? (works without this line)
     LcdSend( 0x20 ); /* LCD Standard Commands,Horizontal addressing mode */
     LcdSend( 0x0C ); /* LCD in normal mode. */
+	LCD_SET_DATA_SENDING_MODE; // from now on only data will be sent to the LCD
 }
 
 static void LcdUpdate ( void )
 {
-	// Set base address to position (0,0).
-	LcdSend( 0x80 );
-	LcdSend( 0x40 );
-
 	uint8_t *byteToSend = LcdCache;
 	uint16_t i = 504;
-	LCD_SET_DATA_SENDING_MODE;
 	while (i)
 	{
 		LcdSend( *byteToSend );
 		--i;
 		byteToSend++;
 	}
-	LCD_SET_COMMANDS_SENDING_MODE;
 }
 
 static void LcdSetPixel ( uint8_t x, uint8_t y )
@@ -143,18 +126,12 @@ static void LcdBar ( uint8_t baseX, uint8_t baseY, uint8_t width, uint8_t height
  *                 cd   -> Command or data (see enum in pcd8544.h)
  * Return value :  None.
  */
+
 static void LcdSend ( uint8_t data )
 {
-	 /*  Enable display controller (active low). */
-	 //    LCD_PORT &= ~( _BV( LCD_CE_PIN ) ); // not needed ?? (works without this line)
-
-	 /*  Send data to display controller. */
+	 // Send data and wait for the Tx register
 	 SPDR = data;
-
-	 /*  Wait until Tx register empty. */
 	 while ( !(SPSR & 0x80) );
-	 /* Disable display controller. */
-	 //    LCD_PORT |= _BV( LCD_CE_PIN ); // not needed ?? (works without this line)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -87,7 +87,6 @@ static void LcdBar          ( uint8_t baseX, uint8_t baseY, uint8_t height, uint
 static void LcdSend ( uint8_t data );
 
 
-
 /*
  * Character lookup table code was taken from the work of Sylvain Bissonette
  * This table defines the standard ASCII characters in a 5x7 dot format.
