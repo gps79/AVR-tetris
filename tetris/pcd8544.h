@@ -65,6 +65,9 @@ typedef unsigned int               word;
 #define LCD_CACHE_SIZE             ( ( LCD_X_RES * LCD_Y_RES ) / 8)
 extern byte LcdCache [ LCD_CACHE_SIZE ];
 
+#define LCD_SET_DATA_SENDING_MODE (LCD_PORT |= _BV( LCD_DC_PIN ))
+#define LCD_SET_COMMANDS_SENDING_MODE (LCD_PORT &= ~( _BV( LCD_DC_PIN ) ))
+
 /* Enumeration */
 typedef enum
 {

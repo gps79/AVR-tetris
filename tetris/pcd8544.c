@@ -14,57 +14,6 @@
  *
  * License      :  GPL v. 3
  *
- * Compiler     :  WinAVR, GCC for AVR platform
- *                 Tested version :
- *                 - 20070525 (avr-libc 1.4)
- *                 - 20071221 (avr-libc 1.6)
- *                 - 20081225 tested by Jakub Lasinski
- *                 - other version please contact me if you find out it is working
- * Compiler note:  Please be aware of using older/newer version since WinAVR
- *                 is under extensive development. Please compile with parameter -O1
- *
- * History      :
- * Version 0.2.6 (March 14, 2009) additional optimization by Jakub Lasinski
- * + Optimization using Memset and Memcpy
- * + Bug fix and sample program reviewed
- * + Commented <stdio.h>
- * Version 0.2.5 (December 25, 2008) x-mas version :)
- * + Boundary check is added (reported by starlino on Dec 20, 2008)
- * + Return value is added, it will definitely useful for error checking
- * Version 0.2.4 (March 5, 2008)
- * + Multiplier was added to LcdBars to scale the bars
- * Version 0.2.3 (February 29, 2008)
- * + Rolled back LcdFStr function because of serious bug
- * + Stable release
- * Version 0.2.2 (February 27, 2008)
- * + Optimizing LcdFStr function
- * Version 0.2.1 (January 2, 2008)
- * + Clean up codes
- * + All settings were migrated to pcd8544.h
- * + Using _BV() instead of << to make a better readable code
- * Version 0.2 (December 11-14, 2007)
- * + Bug fixed in LcdLine() and LcdStr()
- * + Adding new routine
- *    - LcdFStr()
- *    - LcdSingleBar()
- *    - LcdBars()
- *    - LcdRect()
- *    - LcdImage()
- * + PROGMEM used instead of using.data section
- * Version 0.1 (December 3, 2007)
- * + First stable driver
- *
- * Note         :
- * Font will be displayed this way (16x6)
- * 1 2 3 4 5 6 7 8 9 0 1 2 3 4
- * 2
- * 3
- * 4
- * 5
- * 6
- *
- * Contributor : 
- * + Jakub Lasinski
  */
 
  #define __ASSERT_USE_STDERR
@@ -80,7 +29,7 @@
 
 /* Function prototypes */
 
-static void LcdSend    ( byte data, LcdCmdData cd );
+static void LcdSend    ( byte data );
 
 /* Global variables */
 
@@ -119,13 +68,13 @@ void LcdInit ( void )
 
     /* Disable LCD controller */
 //    LCD_PORT |= _BV( LCD_CE_PIN ); // not needed ?? (works without this line)
-
+	LCD_SET_COMMANDS_SENDING_MODE;
 //    LcdSend( 0x21, LCD_CMD ); /* LCD Extended Commands. */  // not needed ?? (works without this line)
 //    LcdSend( 0xC8, LCD_CMD ); /* Set LCD Vop (Contrast).*/ // not needed ?? (works without this line)
 //    LcdSend( 0x06, LCD_CMD ); /* Set Temp coefficent. */ // not needed ?? (works without this line)
 //    LcdSend( 0x13, LCD_CMD ); /* LCD bias mode 1:48. */ // not needed ?? (works without this line)
-    LcdSend( 0x20, LCD_CMD ); /* LCD Standard Commands,Horizontal addressing mode */
-    LcdSend( 0x0C, LCD_CMD ); /* LCD in normal mode. */
+    LcdSend( 0x20 ); /* LCD Standard Commands,Horizontal addressing mode */
+    LcdSend( 0x0C ); /* LCD in normal mode. */
 }
 
 /*
@@ -354,18 +303,19 @@ void LcdBar ( byte baseX, byte baseY, byte width, byte height)
 void LcdUpdate ( void )
 {
 	// Set base address to position (0,0).
-	LcdSend( 0x80, LCD_CMD );
-	LcdSend( 0x40, LCD_CMD );
+	LcdSend( 0x80 );
+	LcdSend( 0x40 );
 
-	// 504 bytes to send. we split it for two loops: 255 and 249 iterations
 	byte *byteToSend = LcdCache;
 	uint16_t i = 504;
+	LCD_SET_DATA_SENDING_MODE;
 	while (i)
 	{
-		LcdSend( *byteToSend, LCD_DATA );
+		LcdSend( *byteToSend );
 		--i;
 		byteToSend++;
 	}
+	LCD_SET_COMMANDS_SENDING_MODE;
 }
 
 /*
@@ -375,29 +325,18 @@ void LcdUpdate ( void )
  *                 cd   -> Command or data (see enum in pcd8544.h)
  * Return value :  None.
  */
-static void LcdSend ( byte data, LcdCmdData cd )
+static void LcdSend ( byte data )
 {
     /*  Enable display controller (active low). */
-    LCD_PORT &= ~( _BV( LCD_CE_PIN ) );
-
-    if ( cd == LCD_DATA )
-    {
-        LCD_PORT |= _BV( LCD_DC_PIN );
-    }
-    else
-    {
-        LCD_PORT &= ~( _BV( LCD_DC_PIN ) );
-    }
+//    LCD_PORT &= ~( _BV( LCD_CE_PIN ) ); // not needed ?? (works without this line)
 
     /*  Send data to display controller. */
     SPDR = data;
 
     /*  Wait until Tx register empty. */
-    while ( (SPSR & 0x80) != 0x80 );
-
-
+    while ( !(SPSR & 0x80) );
     /* Disable display controller. */
-    LCD_PORT |= _BV( LCD_CE_PIN );
+//    LCD_PORT |= _BV( LCD_CE_PIN ); // not needed ?? (works without this line)
 }
 
 
