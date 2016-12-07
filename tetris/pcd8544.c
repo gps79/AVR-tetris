@@ -328,29 +328,27 @@ void LcdSetPen ( LcdPixelMode pen )
  *                 baseY  -> absolute y axis coordinate
  *				   width  -> width of bar (in pixel)
  *				   height -> height of bar (in pixel)
- *				   mode   -> Off, On or Xor. See enum in pcd8544.h.
- * Return value :  see return value on pcd8544.h
  */
-byte LcdBar ( byte baseX, byte baseY, byte width, byte height)
+void LcdBar ( byte baseX, byte baseY, byte width, byte height)
 {
-	byte tmpIdxX,tmpIdxY;
+	assert(baseX < LCD_X_RES);
+	assert(baseY < LCD_Y_RES);
+	assert(baseX+width <= LCD_X_RES);
+	assert(baseY+height <= LCD_Y_RES);
 
-    /* Checking border */
-	if ( ( baseX >= LCD_X_RES ) || ( baseY >= LCD_Y_RES ) ) return OUT_OF_BORDER;
-	if ( ( baseX+width > LCD_X_RES ) || ( baseY+height > LCD_Y_RES ) ) return OUT_OF_BORDER;
-
-    /* Draw lines */
-	byte upperX = baseX + width - 1;
-	byte upperY = baseY + height - 1;
-	for ( tmpIdxY = baseY; tmpIdxY <= upperY; tmpIdxY++ )
+	while (height)
 	{
-		for ( tmpIdxX = baseX; tmpIdxX <= upperX; tmpIdxX++ )
-        {
-			LcdSetPixel( tmpIdxX, tmpIdxY);
-        }
+		byte x = baseX;
+		byte xCounter = width;
+		while (xCounter)
+		{
+			LcdSetPixel( x, baseY);
+			++x;
+			--xCounter;
+		}
+		++baseY;
+		--height;
 	}
-
-    return OK;
 }
 
 void LcdUpdate ( void )
