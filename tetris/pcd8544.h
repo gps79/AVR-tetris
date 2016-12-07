@@ -80,8 +80,10 @@ typedef enum
 } LcdFontSize;
 
 /* Function prototypes */
+#ifndef NDEBUG
 static uint8_t LcdGotoXYFont ( uint8_t x, uint8_t y );
 static uint8_t LcdStr        ( LcdFontSize size, uint8_t dataArray[] );
+#endif
 static void LcdSetPen ( LcdPixelMode pen );
 static void LcdBar          ( uint8_t baseX, uint8_t baseY, uint8_t height, uint8_t width);
 static void LcdSend ( uint8_t data );

@@ -322,7 +322,7 @@ int main()
 		displayScene();
 		if (isDelay)
 		{
-			_delay_ms(80);
+			_delay_ms(200);
 			isDelay = FALSE;
 		}
 

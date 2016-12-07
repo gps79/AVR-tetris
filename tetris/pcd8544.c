@@ -8,6 +8,7 @@
  *                 that your MCU having bigger memory
  *
  * Author       :  Fandi Gunawan <fandigunawan@gmail.com>
+ * Modified by  :  Grzegorz Pietrusiak <gpsspam2@gmail.com>
  * Website      :  http://fandigunawan.wordpress.com
  *
  * Credit       :  Sylvain Bissonette (2003)
@@ -23,7 +24,9 @@
 uint8_t LcdCache [ LCD_CACHE_SIZE ];
 
 /* Cache index */
+#ifndef NDEBUG
 static int   LcdCacheIdx;
+#endif
 static LcdPixelMode g_drawingPen = PIXEL_ON;
 
 /*
@@ -44,8 +47,6 @@ static void LcdInit ( void ) // once static it will be built-in as inline
     // Enable SPI port: No interrupt, MSBit first, Master mode, CPOL->0, CPHA->0, Clk/4
     SPCR = 0x50;
 
-    /* Disable LCD controller */
-//    LCD_PORT |= _BV( LCD_CE_PIN ); // not needed ?? (works without this line)
 	LCD_SET_COMMANDS_SENDING_MODE;
     LcdSend( 0x20 ); /* LCD Standard Commands,Horizontal addressing mode */
     LcdSend( 0x0C ); /* LCD in normal mode. */
@@ -137,7 +138,7 @@ static void LcdSend ( uint8_t data )
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // supporting functions; not used in "release"
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+#ifndef NDEBUG
 /*
  * Name         :  LcdGotoXYFont
  * Description  :  Sets cursor location to xy location corresponding to basic
@@ -307,3 +308,4 @@ void __assert(const char *__file, int __lineno)
 	while (1){}
 }
 
+#endif // NDEBUG
