@@ -38,7 +38,6 @@ uint8_t matrix[16] =  // 16rows, 8 blocks per row, each block is represented by 
 {
 	0,0,0,0,0,0,0,0,0,0,0,0
 };
-uint16_t score = 0;
 
 #define LEFT_BUTTON_PRESSED (!(PIND & (1<<PD0)))
 #define RIGHT_BUTTON_PRESSED (!(PIND & (1<<PD2)))
@@ -243,9 +242,6 @@ static void moveTetriminoDown()
 					matrix[rowUp] = matrix[rowUp-1];
 				}
 				matrix[0] = 0;
-
-				// add some scores here due to full row
-				++score;
 			}
 		}
 		randomizeNextTetrimino();
@@ -302,9 +298,6 @@ static void displayScene()
 
 	// draw next tetrimino
 	drawTetrimino(nextTetrimino, NEXT_TETRIMINO_POSITION);
-
-	// display score
-	// ... TODO
 
 	LcdUpdate(); // draw from buffer to the LCD
 }
