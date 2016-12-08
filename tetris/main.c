@@ -62,10 +62,10 @@ static uint8_t myrand() // the cost is 30B (this function + ADC initialization)
 	return randomNumber;
 }
 
-static void startTimer()
+void startTimer()
 {
 	TIFR |= (1 << TOV1); // reset the overflow flag (by writing '1')
-	TCNT1 = 65535-975;
+	TCNT1 = 65535-975*4/* MHz */;
 	TCCR1B = (1 << CS10) | (1 << CS12); // start the timer by setting 1024 prescaler
 }
 
@@ -75,6 +75,7 @@ static void randomizeNextTetrimino()
 	currentTetriminoPosition = 3; // top middle initial position of current tetrimino
 	nextTetrimino = (myrand()%7) << 2;
 }
+
 static void gameInit()
 {
 	// init ADC0 which supports random number generator
@@ -296,10 +297,10 @@ static void displayScene()
 
 static void mydelay()
 {
-	uint16_t t = 12000;
+	uint32_t t = 165535;//12000;
 	while (--t)
 	{
-		asm volatile("nop");
+		__asm__ __volatile__("nop");
 	}
 }
 
@@ -396,18 +397,19 @@ int main()
 			}
 		}
 
-		if (DOWN_BUTTON_PRESSED)
-		{
-			moveTetriminoDown();
-			startTimer(); // inform after 1 second period
-			isDelay = TRUE;
-		}
-
 		if (TIMER_HAS_EXPIRED)
 		{
+			goto labelMoveDown;
+		}
+
+		if (DOWN_BUTTON_PRESSED)
+		{
+			isDelay = TRUE;
+labelMoveDown:
 			moveTetriminoDown();
 			startTimer(); // inform after 1 second period
 		}
+
 	}	
 	return 0;
 }
