@@ -62,10 +62,10 @@ static uint8_t myrand() // the cost is 30B (this function + ADC initialization)
 	return randomNumber;
 }
 
-static void startTimer(uint16_t delay)
+static void startTimer()
 {
 	TIFR |= (1 << TOV1); // reset the overflow flag (by writing '1')
-	TCNT1 = delay;
+	TCNT1 = 65535-975;
 	TCCR1B = (1 << CS10) | (1 << CS12); // start the timer by setting 1024 prescaler
 }
 
@@ -90,7 +90,7 @@ static void gameInit()
 	randomizeNextTetrimino();
 
 	// initialize the timer
-	startTimer(65535-975); // inform after 1 second period
+	startTimer(); // inform after 1 second period
 }
 
 static void drawTile (uint8_t x, uint8_t y)
@@ -108,14 +108,6 @@ static void drawTile (uint8_t x, uint8_t y)
 		LcdBar(scrX+1, scrY+1, 2,2);
 		LcdSetPen(PIXEL_ON);
 	}
-}
-
-static void drawTileLinearly (uint8_t pos)
-{
-	assert(pos<8*16 || (pos>=NEXT_TETRIMINO_POSITION && pos<=(NEXT_TETRIMINO_POSITION+10)));
-	uint8_t x = pos & 0x07;
-	uint8_t y = pos >> 3;
-	drawTile(x, y);
 }
 
 // tetriminoId contains 3 bits of tetrimino number and 2 bits of orientation
@@ -139,18 +131,18 @@ static void drawTetrimino(uint8_t tetriminoId, uint8_t position)
 	uint8_t tetriminoSpec = tetriminos[tetriminoId];
 	
 	// draw
-	x=0;y=0;
+	x = position & 0x07;
+	y = position >> 3;
 	for (bitMask = 0x80; bitMask != 0; bitMask >>= 1)
 	{
 		if (tetriminoSpec&bitMask)
 		{
-			drawTileLinearly(position + y*8 + x);
+			drawTile(x,y);
 		}
-
 		++x;
-		if (x==3)
+		if (bitMask&0x24)
 		{
-			x = 0;
+			x-=3;
 			++y;
 		}
 	}
@@ -407,14 +399,14 @@ int main()
 		if (DOWN_BUTTON_PRESSED)
 		{
 			moveTetriminoDown();
-			startTimer(65535-975); // inform after 1 second period
+			startTimer(); // inform after 1 second period
 			isDelay = TRUE;
 		}
 
 		if (TIMER_HAS_EXPIRED)
 		{
 			moveTetriminoDown();
-			startTimer(65535-975); // inform after 1 second period
+			startTimer(); // inform after 1 second period
 		}
 	}	
 	return 0;
