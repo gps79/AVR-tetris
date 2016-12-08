@@ -297,10 +297,10 @@ static void displayScene()
 
 static void mydelay()
 {
-	uint32_t t = 165535;//12000;
+	uint32_t t = 205535;//12000;
 	while (--t)
 	{
-		__asm__ __volatile__("nop");
+		__asm__ __volatile__("");
 	}
 }
 
@@ -326,6 +326,13 @@ int main()
 			isDelay = FALSE;
 		}
 
+		if ((TIMER_HAS_EXPIRED) || (DOWN_BUTTON_PRESSED))
+		{
+			moveTetriminoDown();
+			startTimer(); // inform after 1 second period
+			isDelay = TRUE;
+		}
+
 		if (ROTATION_BUTTON_PRESSED)
 		{
 			uint8_t newTetrimino;
@@ -343,71 +350,28 @@ int main()
 				isDelay = TRUE;
 			}
 		}
+		uint8_t newPosition;
 		if (LEFT_BUTTON_PRESSED)
 		{
-			uint8_t newPosition;
 			if ((currentTetriminoPosition&0x07) != 0)
 			{
 				newPosition = currentTetriminoPosition - 1;
-				if (canPlaceTetrimino(currentTetrimino, newPosition, FALSE))
-				{
-					currentTetriminoPosition = newPosition;
-					isDelay = TRUE;
-				}
+				goto labelNewPosition;
 			}
 		}
 
 		if (RIGHT_BUTTON_PRESSED)
 		{
-			// how far we can go to the right depends on tetrimino shape and rotation. 
-			// For most of them we can go up to position 5 (for 0 and 180 degrees rotation) and up to 6 (for 90 and 270 degrees rotation).
-			// Two tetriminos are different: "O" shape and "I" shape. For "O" shape we go up to 6 position (regardless of the rotation).
-			// For "I" shape we go up to 7 position (for 90 and 270 degrees) or up to 5 position (for 0 and 180 degrees)
-			// Below there is a truth table for the decision "if we can move right" (1) or not (0):
-			//                           current X position
-			// orientation   shape no.    0 1 2 3 4 5 6 7
-			// -------------------------------------------
-			//     0            0         1 1 1 1 1 0 0 0
-			//     0            1         1 1 1 1 1 0 0 0
-			//     0            2         1 1 1 1 1 0 0 0
-			//     0            3         1 1 1 1 1 1 0 0
-			//     0            4         1 1 1 1 1 0 0 0
-			//     0            5         1 1 1 1 1 0 0 0
-			//     0            6         1 1 1 1 1 0 0 0
-			//
-			//     1            0         1 1 1 1 1 1 1 0
-			//     1            1         1 1 1 1 1 1 0 0
-			//     1            2         1 1 1 1 1 1 0 0
-			//     1            3         1 1 1 1 1 1 0 0
-			//     1            4         1 1 1 1 1 1 0 0
-			//     1            5         1 1 1 1 1 1 0 0
-			//     1            6         1 1 1 1 1 1 0 0
-			uint8_t shapeNo = currentTetrimino >> 2;
-			uint8_t orientation = currentTetrimino & 1; // one bit is enough as tetrimino boundaries are the same for (0 and 180) degrees, and for (90 and 270) degrees
-			uint8_t xPos = currentTetriminoPosition&0x07; // current tetrimino X position (0-7)
-			if (   ((orientation==1) && ((xPos<6) || ((xPos==6) && (shapeNo==0)))) ||
-				   ((orientation!=1) && ((xPos<5) || ((xPos==5) && (shapeNo==3))))   ) // this condition is a result of above truth table optimization
+			if ((currentTetriminoPosition&0x07) != 0x07)
 			{
-				uint8_t newPosition = currentTetriminoPosition + 1;
+				newPosition = currentTetriminoPosition + 1;
+labelNewPosition:
 				if (canPlaceTetrimino(currentTetrimino, newPosition, FALSE))
 				{
 					currentTetriminoPosition = newPosition;
 					isDelay = TRUE;
 				}
 			}
-		}
-
-		if (TIMER_HAS_EXPIRED)
-		{
-			goto labelMoveDown;
-		}
-
-		if (DOWN_BUTTON_PRESSED)
-		{
-			isDelay = TRUE;
-labelMoveDown:
-			moveTetriminoDown();
-			startTimer(); // inform after 1 second period
 		}
 
 	}	
