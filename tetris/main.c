@@ -19,14 +19,14 @@
 #include "pcd8544.h"
 #include "pcd8544.c"
 
-uint8_t tetriminos[7][4] = { // there are 7 tetriminos, each of them has 4 orientations (0, 90deg., 180deg., and 270deg.)
-	{ 0xE0, 0x92, 0xE0, 0x92}, // I is only 3 blocks long due to optimization
-	{ 0xE4, 0xD2, 0x9C, 0x4B}, // J
-	{ 0xF0, 0x93, 0x3C, 0xC9}, // L
-	{ 0xD8, 0xD8, 0xD8, 0xD8}, // o
-	{ 0x78, 0x99, 0x78, 0x99}, // S
-	{ 0xE8, 0x9A, 0x5C, 0x59}, // T
-	{ 0xCC, 0x5A, 0xCC, 0x5A}  // Z
+uint8_t tetriminos[7*4] = { // there are 7 tetriminos, each of them has 4 orientations (0, 90deg., 180deg., and 270deg.)
+	0xE0, 0x92, 0xE0, 0x92, // I is only 3 blocks long due to optimization
+	0xE4, 0xD2, 0x9C, 0x4B, // J
+	0xF0, 0x93, 0x3C, 0xC9, // L
+	0xD8, 0xD8, 0xD8, 0xD8, // o
+	0x78, 0x99, 0x78, 0x99, // S
+	0xE8, 0x9A, 0x5C, 0x59, // T
+	0xCC, 0x5A, 0xCC, 0x5A  // Z
 };
 
 uint8_t currentTetrimino; // tetrimino currently being dropped
@@ -137,7 +137,7 @@ static void drawTetrimino(uint8_t tetriminoId, uint8_t position)
 	//  .#.
 	//  ###
 	//  ...
-	uint8_t tetriminoSpec = tetriminos[tetriminoId>>2][tetriminoId&0x03];
+	uint8_t tetriminoSpec = tetriminos[tetriminoId];
 	
 	// draw
 	x=0;y=0;
@@ -169,7 +169,7 @@ static bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, bool storePer
 	assert(tetrimino<7*4);
 
 	uint8_t x,y,bitMask;
-	uint8_t tetriminoSpec = tetriminos[tetrimino>>2][tetrimino&0x03];
+	uint8_t tetriminoSpec = tetriminos[tetrimino];
 	uint8_t xPos = position&0x07;
 	uint8_t yPos = position>>3;
 	if (yPos>=16)
