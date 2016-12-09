@@ -164,6 +164,7 @@ static bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, TStoreMode st
 	for (bitMask = 0x80; bitMask != 0; bitMask >>= 1)
 	{
 		assert(xPos<10);
+		uint8_t matrixMask = 0x80 >> xPos;
 		//assert(yPos<18);
 		if (tetriminoSpec&bitMask)
 		{
@@ -173,7 +174,7 @@ static bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, TStoreMode st
 			}
 			else if (storePermanently == store)
 			{
-				matrix[yPos] |= (0x80>>xPos);
+				matrix[yPos] |= matrixMask;
 			}
 			else // if (storePermanently == check)
 			{
@@ -185,7 +186,7 @@ static bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, TStoreMode st
 				{
 					return FALSE;
 				}
-				if (matrix[yPos] & (0x80>>xPos))
+				if (matrix[yPos] & matrixMask)
 				{
 					return FALSE;
 				}
