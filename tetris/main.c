@@ -26,14 +26,15 @@ typedef enum
 	draw = 2
 } TStoreMode;
 
-uint8_t tetriminos[7*4] = { // there are 7 tetriminos, each of them has 4 orientations (0, 90deg., 180deg., and 270deg.)
+uint8_t tetriminos[8*4] = { // there are 7 tetriminos, each of them has 4 orientations (0, 90deg., 180deg., and 270deg.)
 	0xE0, 0x92, 0xE0, 0x92, // I is only 3 blocks long due to optimization
 	0xE4, 0xD2, 0x9C, 0x4B, // J
 	0xF0, 0x93, 0x3C, 0xC9, // L
 	0xD8, 0xD8, 0xD8, 0xD8, // o
 	0x78, 0x99, 0x78, 0x99, // S
 	0xE8, 0x9A, 0x5C, 0x59, // T
-	0xCC, 0x5A, 0xCC, 0x5A  // Z
+	0xCC, 0x5A, 0xCC, 0x5A, // Z
+	0x80, 0x80, 0x80, 0x80  // .
 };
 
 uint8_t currentTetrimino; // tetrimino currently being dropped
@@ -80,7 +81,7 @@ static void randomizeNextTetrimino()
 {
 	currentTetrimino = nextTetrimino;
 	currentTetriminoPosition = 3; // top middle initial position of current tetrimino
-	nextTetrimino = (myrand()%7) << 2;
+	nextTetrimino = (myrand() & 0x07) << 2;
 }
 
 static void gameInit()
@@ -140,7 +141,7 @@ static void drawTile (uint8_t x, uint8_t y)
 static bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, TStoreMode storePermanently)
 {
 	assert(position<136 || position==NEXT_TETRIMINO_POSITION);
-	assert(tetrimino<7*4);
+	assert(tetrimino<8*4);
 
 	// example tetrimino specification coded as 0x9A ( 01011100 binary; or 010 111 000 as three rows)
 	//  .#.
