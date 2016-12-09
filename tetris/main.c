@@ -19,6 +19,13 @@
 #include "pcd8544.h"
 #include "pcd8544.c"
 
+typedef enum
+{
+	check = 0,
+	store = 1,
+	draw = 2
+} TStoreMode;
+
 uint8_t tetriminos[7*4] = { // there are 7 tetriminos, each of them has 4 orientations (0, 90deg., 180deg., and 270deg.)
 	0xE0, 0x92, 0xE0, 0x92, // I is only 3 blocks long due to optimization
 	0xE4, 0xD2, 0x9C, 0x4B, // J
@@ -32,18 +39,18 @@ uint8_t tetriminos[7*4] = { // there are 7 tetriminos, each of them has 4 orient
 uint8_t currentTetrimino; // tetrimino currently being dropped
 uint8_t currentTetriminoPosition; // linear position of tetrimino on screen calculated as x+8*y
 uint8_t nextTetrimino; // tetrimino next to be dropped once current finished
-#define NEXT_TETRIMINO_POSITION 155
+#define NEXT_TETRIMINO_POSITION (3 + 8*19) // (X + 8*Y) position
 
 uint8_t matrix[16] =  // 16rows, 8 blocks per row, each block is represented by one bit
 {
-	0,0,0,0,0,0,0,0,0,0,0,0
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 };
 
-#define LEFT_BUTTON_PRESSED (!(PIND & (1<<PD0)))
-#define RIGHT_BUTTON_PRESSED (!(PIND & (1<<PD2)))
-#define DOWN_BUTTON_PRESSED (!(PIND & (1<<PD1)))
-#define ROTATION_BUTTON_PRESSED (!(PIND & (1<<PD3)))
-#define TIMER_HAS_EXPIRED ((TIFR & (1 << TOV1) ) > 0)
+#define LEFT_BUTTON_PRESSED (!(PIND & (1<<PD0))) // returns TRUE if left button is pressed
+#define RIGHT_BUTTON_PRESSED (!(PIND & (1<<PD2))) // returns TRUE if right button is pressed
+#define DOWN_BUTTON_PRESSED (!(PIND & (1<<PD1))) // returns TRUE if down button is pressed
+#define ROTATION_BUTTON_PRESSED (!(PIND & (1<<PD3))) // returns TRUE if rotation button is pressed
+#define TIMER_HAS_EXPIRED ((TIFR & (1 << TOV1) ) > 0) // returns TRUE if timer has expired
 
 // poor man's random function. Not too bad as we need to random tiles from the range of 0-6 only
 static uint8_t myrand() // the cost is 30B (this function + ADC initialization)
@@ -78,12 +85,12 @@ static void randomizeNextTetrimino()
 
 static void gameInit()
 {
-	// init ADC0 which supports random number generator
+	// initialize ADC0 which supports random number generator
 	ADMUX = (1 << REFS0) | (1 << REFS1); // ADC0 + internal 2.56V reference
 	ADCSRA = (1 << ADPS2) | (1 << ADPS1) // 64 prescaler for 4Mhz
 			| (1 << ADEN);    // Enable the ADC
 
-	// init hardware buttons
+	// initialize hardware buttons
 	//	DDRD = 0x00; // not needed?? (works without this line) Atmega has this by default?
 
 	LcdInit();
@@ -111,75 +118,58 @@ static void drawTile (uint8_t x, uint8_t y)
 	}
 }
 
-// tetriminoId contains 3 bits of tetrimino number and 2 bits of orientation
+// this function works in three modes depending on the value of "storePermanently"
+// When storePermanently==check:
+//   it behaves like a function which tests if "tetrimino" can be placed on screen in "position" (i.e. does not collide with other objects on screen)
+// When storePermanently==store:
+//   it behaves like a procedure which stores given "tetrimino" in "position" in the "matrix".
+//   To run in this mode you have to be sure that you can store the "tetrimino" in the "position" by running this function in "check" mode first
+// When storePermanently==draw:
+//   it draws tetrimino in "position" without checking anything or touching the "matrix"
+//
+// "tetrimino" contains 3 bits of tetrimino number and 2 bits of orientation
 //   bits in tetrominoId:   MSB  000NNNOO LSB
 //                              NNN - 3 bits of tetrimino number (values 0-7)
 //                               OO - 2 bits of tetrimino orientation (values 0-3)
-// position is a linear position on screen (16 rows by 8 columns)
+// "position" is a linear position on screen (16 rows by 8 columns)
 //   bits in position:     MSB  0RRRRCCC LSB
 //                              RRRR - 4 bits of row number (values 0-15)
 //                               CCC - 3 bits of column number (values 0-7)
-static void drawTetrimino(uint8_t tetriminoId, uint8_t position)
+//   "position" can be set to one special value NEXT_TETRIMINO_POSITION for drawing next tetrimino on the bottom of the screen
+//
+static bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, TStoreMode storePermanently)
 {
-	uint8_t x,y,tetriminoSpec, bitMask;
-	assert(tetriminoId<7*4);
-	assert(position<16*8 || position==NEXT_TETRIMINO_POSITION);
+	assert(position<136 || position==NEXT_TETRIMINO_POSITION);
+	assert(tetrimino<7*4);
 
 	// example tetrimino specification coded as 0x9A ( 01011100 binary; or 010 111 000 as three rows)
 	//  .#.
 	//  ###
 	//  ...
-	tetriminoSpec = tetriminos[tetriminoId];
-	
-	// draw
-	x = position & 0x07;
-	y = position >> 3;
-	for (bitMask = 0x80; bitMask != 0; bitMask >>= 1)
-	{
-		if (tetriminoSpec&bitMask)
-		{
-			drawTile(x,y);
-		}
-		++x;
-		if (bitMask&0x24)
-		{
-			x-=3;
-			++y;
-		}
-	}
-}
-
-// this function plays two roles depending on the value of "storePermanently"
-// When storePermanently==false:
-//   it behaves like a function which tests if "tetrimino" can be placed on screen in "position" (i.e. does not collide with other objects on screen)
-// When storePermanently==true:
-//   it behaves like a procedure which stores given "tetrimino" in "position" in the "matrix".
-//   To run in this mode you have to be sure that you can store the "tetrimino" in the "position" by running this function in storePermanently==false mode first
-static bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, bool storePermanently)
-{
-	assert(position<136);
-	assert(tetrimino<7*4);
-
-	uint8_t bitMask;
 	uint8_t tetriminoSpec = tetriminos[tetrimino];
-	uint8_t xPos = position & 0x7;
+
+	uint8_t xPos = position & 0x7; // split position into X and Y coordinates
 	uint8_t yPos = position >> 3;
-	if (yPos>=16)
+	if ((!storePermanently) && (yPos>=16)) // check yPos only in "check" mode
 	{
 		return FALSE;
 	}
+	uint8_t bitMask;
 	for (bitMask = 0x80; bitMask != 0; bitMask >>= 1)
 	{
 		assert(xPos<10);
-		assert(yPos<18);
-		assert(y<3);
+		//assert(yPos<18);
 		if (tetriminoSpec&bitMask)
 		{
-			if (storePermanently)
+			if (storePermanently == draw)
+			{
+				drawTile(xPos, yPos);
+			}
+			else if (storePermanently == store)
 			{
 				matrix[yPos] |= (0x80>>xPos);
 			}
-			else
+			else // if (storePermanently == check)
 			{
 				if (xPos >= 8)
 				{
@@ -209,13 +199,13 @@ static bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, bool storePer
 static void moveTetriminoDown()
 {
 	uint8_t newPosition = currentTetriminoPosition+8; // next row
-	if (canPlaceTetrimino(currentTetrimino, newPosition, FALSE))
+	if (canPlaceTetrimino(currentTetrimino, newPosition, check))
 	{
 		currentTetriminoPosition = newPosition;
 	}
 	else
 	{ // store current tetrimino permanently (in the "matrix") in current location
-		canPlaceTetrimino(currentTetrimino, currentTetriminoPosition, TRUE);
+		canPlaceTetrimino(currentTetrimino, currentTetriminoPosition, store);
 
 		// verify if there is any full line to drop
 		uint8_t row;
@@ -233,7 +223,7 @@ static void moveTetriminoDown()
 			}
 		}
 		randomizeNextTetrimino();
-		if (!canPlaceTetrimino(currentTetrimino, currentTetriminoPosition, FALSE))
+		if (!canPlaceTetrimino(currentTetrimino, currentTetriminoPosition, check))
 		{
 			// GAME OVER
 			if (SHOW_GAME_OVER)
@@ -282,10 +272,10 @@ static void displayScene()
 	}
 
 	// draw current tile
-	drawTetrimino(currentTetrimino, currentTetriminoPosition);
+	canPlaceTetrimino(currentTetrimino, currentTetriminoPosition, draw);
 
 	// draw next tetrimino
-	drawTetrimino(nextTetrimino, NEXT_TETRIMINO_POSITION);
+	canPlaceTetrimino(nextTetrimino, NEXT_TETRIMINO_POSITION, draw);
 
 	LcdUpdate(); // draw from buffer to the LCD
 }
@@ -339,7 +329,7 @@ int main()
 			{
 				newTetrimino = currentTetrimino + 1;
 			}
-			if (canPlaceTetrimino(newTetrimino, currentTetriminoPosition, FALSE))
+			if (canPlaceTetrimino(newTetrimino, currentTetriminoPosition, check))
 			{
 				currentTetrimino = newTetrimino;
 				isDelay = TRUE;
@@ -361,7 +351,7 @@ int main()
 			{
 				newPosition = currentTetriminoPosition + 1;
 labelNewPosition:
-				if (canPlaceTetrimino(currentTetrimino, newPosition, FALSE))
+				if (canPlaceTetrimino(currentTetrimino, newPosition, check))
 				{
 					currentTetriminoPosition = newPosition;
 					isDelay = TRUE;
