@@ -65,9 +65,9 @@ static uint8_t myrand() // the cost is 30B (this function + ADC initialization)
 	// use value read from ADC as additional seed for the randomizer
 //	randomNumber = ((randomNumber*109+89)%255)^ADCL; // better randomizer but 12 Bytes more expensive than the vbelow one
 //	randomNumber = (randomNumber*109)^ADC; // a bit worse randomizer but we save 12 Bytes
-	randomNumber = ((randomNumber<<4)|(randomNumber>>4))^ADC; // even worse randomizer but we save another bytes
+	randomNumber = (randomNumber<<1)^ADC; // even worse randomizer but we save another bytes
 //	randomNumber = randomNumber^ADC; // this one is too bad to use it
-	return randomNumber;
+	return randomNumber & 0x1C;
 }
 
 void startTimer()
@@ -81,7 +81,12 @@ static void randomizeNextTetrimino()
 {
 	currentTetrimino = nextTetrimino;
 	currentTetriminoPosition = 3; // top middle initial position of current tetrimino
-	nextTetrimino = (myrand() & 0x07) << 2;
+	nextTetrimino = myrand();
+
+	assert((currentTetrimino >> 2) < 8);	// check if correctly randomized
+	assert((currentTetrimino & 0x03) == 0); // ...
+	assert((nextTetrimino >> 2) < 8);		// ...
+	assert((nextTetrimino & 0x03) == 0);	// ...
 }
 
 static void gameInit()
@@ -107,7 +112,7 @@ static void drawTile (uint8_t x, uint8_t y)
 	assert(x<8);
 	assert(y<21);
 
-	uint8_t scrX = y*4;
+	uint8_t scrX = y*4; // convert virtual coordinates to screen coordinates
 	uint8_t scrY = 48-(8 + x*4)-4;
 
 	LcdBar(scrX, scrY, 4,4);
