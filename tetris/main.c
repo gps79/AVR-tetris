@@ -160,7 +160,7 @@ static bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, bool storePer
 	assert(position<136);
 	assert(tetrimino<7*4);
 
-	uint8_t x,y,bitMask;
+	uint8_t bitMask;
 	uint8_t tetriminoSpec = tetriminos[tetrimino];
 	uint8_t xPos = position&0x07;
 	uint8_t yPos = position>>3;
@@ -168,12 +168,10 @@ static bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, bool storePer
 	{
 		return FALSE;
 	}
-	x=0;y=0;
 	for (bitMask = 0x80; bitMask != 0; bitMask >>= 1)
 	{
 		assert(xPos<10);
 		assert(yPos<18);
-		assert(x<3);
 		assert(y<3);
 		if (tetriminoSpec&bitMask)
 		{
@@ -198,12 +196,9 @@ static bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, bool storePer
 			}
 		}
 
-		++x;
 		++xPos;
-		if (x==3) // go to next line and correct "x" and "xPos"
+		if (bitMask & 0x24) // go to next line and correct "xPos" and "yPos"
 		{
-			x = 0;
-			++y;
 			xPos -= 3;
 			++yPos;
 		}
