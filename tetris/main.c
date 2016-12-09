@@ -121,7 +121,7 @@ static void drawTile (uint8_t x, uint8_t y)
 //                               CCC - 3 bits of column number (values 0-7)
 static void drawTetrimino(uint8_t tetriminoId, uint8_t position)
 {
-	uint8_t x,y,bitMask;
+	uint8_t x,y,tetriminoSpec, bitMask;
 	assert(tetriminoId<7*4);
 	assert(position<16*8 || position==NEXT_TETRIMINO_POSITION);
 
@@ -129,7 +129,7 @@ static void drawTetrimino(uint8_t tetriminoId, uint8_t position)
 	//  .#.
 	//  ###
 	//  ...
-	uint8_t tetriminoSpec = tetriminos[tetriminoId];
+	tetriminoSpec = tetriminos[tetriminoId];
 	
 	// draw
 	x = position & 0x07;
@@ -162,8 +162,8 @@ static bool canPlaceTetrimino(uint8_t tetrimino, uint8_t position, bool storePer
 
 	uint8_t bitMask;
 	uint8_t tetriminoSpec = tetriminos[tetrimino];
-	uint8_t xPos = position&0x07;
-	uint8_t yPos = position>>3;
+	uint8_t xPos = position & 0x7;
+	uint8_t yPos = position >> 3;
 	if (yPos>=16)
 	{
 		return FALSE;
