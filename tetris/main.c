@@ -7,6 +7,7 @@
 #define SHOW_GAME_OVER FALSE
 #define TETRIMINOS_AS_BOXES TRUE
 #define LED_FANFARE FALSE
+#define ENABLE_SCORE
 
 #define __ASSERT_USE_STDERR
 //#define NDEBUG
@@ -35,7 +36,7 @@ uint8_t tetriminos[8*4] = { // there are 7 tetriminos, each of them has 4 orient
 	0x78, 0x99, 0x78, 0x99, // S
 	0xE8, 0x9A, 0x5C, 0x59, // T
 	0xCC, 0x5A, 0xCC, 0x5A, // Z
-	0x80, 0x80, 0x80, 0x80  // .
+	0x80, 0x80, 0x80, 0x80  // . additional shape which is not a real tetrimino, but it adds some fun to the game
 };
 
 uint8_t currentTetrimino; // tetrimino currently being dropped
@@ -48,6 +49,10 @@ uint8_t matrix[16] =  // 16rows, 8 blocks per row, each block is represented by 
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 };
 
+#ifdef ENABLE_SCORE
+	uint8_t g_score = 0;
+#endif
+
 #define LEFT_BUTTON_PRESSED (!(PIND & (1<<PD0))) // returns TRUE if left button is pressed
 #define RIGHT_BUTTON_PRESSED (!(PIND & (1<<PD2))) // returns TRUE if right button is pressed
 #define DOWN_BUTTON_PRESSED (!(PIND & (1<<PD1))) // returns TRUE if down button is pressed
@@ -57,6 +62,7 @@ uint8_t matrix[16] =  // 16rows, 8 blocks per row, each block is represented by 
 #define LED_OFF (PORTC &= ~((1 << 5) | (1<<3)))
 
 uint8_t g_randomNumber; // uninitialized value; it is ok to be random at init :)
+
 // poor man's random function. Not too bad as we need to random tiles from the range of 0-6 only
 static uint8_t myrand() // the cost is 30B (this function + ADC initialization)
 {
@@ -72,7 +78,11 @@ static uint8_t myrand() // the cost is 30B (this function + ADC initialization)
 void startTimer()
 {
 	TIFR |= (1 << TOV1); // reset the overflow flag (by writing '1')
-	TCNT1 = 65535-975*4/* MHz */;
+#ifdef ENABLE_SCORE
+	TCNT1 = 65535-4000+(g_score<<3); // starting from about 0.5s period
+#else
+	TCNT1 = 65535-4000; // about 0.5s period
+#endif
 	TCCR1B = (1 << CS10) | (1 << CS12); // start the timer by setting 1024 prescaler
 }
 
@@ -106,7 +116,7 @@ static void gameInit()
 	startTimer(); // inform after 1 second period
 
 	if (LED_FANFARE)
-	{
+	{ // enable output signal for LED on PORT C
 		DDRC = 0xFF;
 	}
 }
@@ -222,6 +232,9 @@ static void moveTetriminoDown()
 		{
 			while (matrix[row] == 0xff) // we found a row full of tiles; "while" loop is used to remove all full lines dropped to "row" position
 			{
+				#ifdef ENABLE_SCORE
+					++g_score;
+				#endif
 				if (LED_FANFARE)
 				{
 					LED_ON;
@@ -252,6 +265,30 @@ static void moveTetriminoDown()
 		}
 	}
 }
+
+
+#ifdef ENABLE_SCORE
+static void showScore()
+{
+	LcdBar(2,3,64-(g_score>>2), 1);
+	//uint8_t score = g_score>>3;
+	//uint8_t *scrPtr = (uint8_t *)&LcdCache[2]; // last line; 16th pixel from the right end
+	//for (uint8_t i=32; i;)
+	//{
+		//--i;
+		//if (i==score)
+		//{
+			//*scrPtr++ &= 0xFF;
+			//*scrPtr++ &= 0xFF;
+		//}
+		//else
+		//{
+			//*scrPtr++ &= 0x63;
+			//*scrPtr++ &= 0x6B;
+		//}
+	//}
+}
+#endif
 
 static void displayScene()
 {
@@ -286,6 +323,10 @@ static void displayScene()
 
 	// draw next tetrimino
 	canPlaceTetrimino(nextTetrimino, NEXT_TETRIMINO_POSITION, draw);
+
+#ifdef ENABLE_SCORE
+	showScore();
+#endif
 
 	LcdUpdate(); // draw from buffer to the LCD
 }
