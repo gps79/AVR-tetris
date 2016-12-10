@@ -373,13 +373,13 @@ int main()
 		if (ROTATION_BUTTON_PRESSED)
 		{
 			uint8_t newTetrimino;
-			if ((currentTetrimino&0x03) == 0x03)
+			if ((currentTetrimino&0x03) == 0x00)
 			{
-				newTetrimino = currentTetrimino & 0xfC;
+				newTetrimino = currentTetrimino | 0x03;
 			} 
 			else
 			{
-				newTetrimino = currentTetrimino + 1;
+				newTetrimino = currentTetrimino - 1;
 			}
 			if (canPlaceTetrimino(newTetrimino, currentTetriminoPosition, check))
 			{
