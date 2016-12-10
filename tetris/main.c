@@ -56,21 +56,17 @@ uint8_t matrix[16] =  // 16rows, 8 blocks per row, each block is represented by 
 #define LED_ON (PORTC |= (1<<5) | (1<<3))
 #define LED_OFF (PORTC &= ~((1 << 5) | (1<<3)))
 
+uint8_t g_randomNumber; // uninitialized value; it is ok to be random at init :)
 // poor man's random function. Not too bad as we need to random tiles from the range of 0-6 only
 static uint8_t myrand() // the cost is 30B (this function + ADC initialization)
 {
-	static uint8_t randomNumber = 3;
 
 	// we use ADC conversion of unconnected ATMEGA ADC pin to read the noise. The noise is added (XOR) to randomized value to make it more random.
 	ADCSRA |= (1<<ADSC); // run ADC conversion once
 	while(ADCSRA & (1<<ADSC)); // wait until ADC conversion finishes
 
-	// use value read from ADC as additional seed for the randomizer
-//	randomNumber = ((randomNumber*109+89)%255)^ADCL; // better randomizer but 12 Bytes more expensive than the vbelow one
-//	randomNumber = (randomNumber*109)^ADC; // a bit worse randomizer but we save 12 Bytes
-	randomNumber = (randomNumber<<1)^ADC; // even worse randomizer but we save another bytes
-//	randomNumber = randomNumber^ADC; // this one is too bad to use it
-	return randomNumber & 0x1C;
+	g_randomNumber = (g_randomNumber<<1)^ADC;
+	return g_randomNumber & 0x1C;
 }
 
 void startTimer()
