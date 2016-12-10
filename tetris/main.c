@@ -77,7 +77,8 @@ static uint8_t myrand() // the cost is 30B (this function + ADC initialization)
 
 void startTimer()
 {
-	TIFR |= (1 << TOV1); // reset the overflow flag (by writing '1')
+	TIFR = (1 << TOV1); // reset the overflow flag (by writing '1')
+//	TIFR |= (1 << TOV1); // reset the overflow flag (by writing '1')
 #ifdef ENABLE_SCORE
 	TCNT1 = 65535-4000+(g_score<<3); // starting from about 0.5s period
 #else
