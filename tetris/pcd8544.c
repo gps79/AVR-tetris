@@ -27,7 +27,6 @@ uint8_t LcdCache [ LCD_CACHE_SIZE ];
 #ifndef NDEBUG
 static int   LcdCacheIdx;
 #endif
-static LcdPixelMode g_drawingPen = PIXEL_ON;
 
 /*
  * Name         :  LcdInit
@@ -65,31 +64,6 @@ static void LcdUpdate ( void )
 	}
 }
 
-static void LcdSetPixel ( uint8_t x, uint8_t y )
-{
-	uint16_t  index;
-	uint8_t  bitMask;
-
-	assert( x < LCD_X_RES );
-	assert( y < LCD_Y_RES );
-
-	index = ( ( y >> 3 ) * 84 ) + x;
-	bitMask = 0x01 << (y & 0x07);
-	uint8_t *addr = &LcdCache[ index ];
-	uint8_t value = *addr; // splitting LcdCache[ index ] |= bitMask;  helps compiler to optimize (saved 2B)
-	if (PIXEL_ON == g_drawingPen)
-		value |= bitMask;
-	else
-		value &= ( ~bitMask);
-	*addr = value;
-}
-
-static void LcdSetPen ( LcdPixelMode pen )
-{
-	assert((pen==PIXEL_OFF) || (pen==PIXEL_ON));
-	g_drawingPen = pen;
-}
-
 /*
  * Name         :  LcdBar
  * Description  :  Display single bar.
@@ -105,13 +79,32 @@ static void LcdBar ( uint8_t baseX, uint8_t baseY, uint8_t width, uint8_t height
 	assert(baseX+width <= LCD_X_RES);
 	assert(baseY+height <= LCD_Y_RES);
 
+	bool mode = TRUE; // draw black pixels
+	if (baseY&0x01) mode = FALSE; // draw blank pixels
 	while (height)
 	{
 		uint8_t x = baseX;
 		uint8_t xCounter = width;
 		while (xCounter)
 		{
-			LcdSetPixel( x, baseY);
+			//LcdSetPixel( x, baseY);
+			{
+				uint16_t  index;
+				uint8_t  bitMask;
+
+				assert( x < LCD_X_RES );
+				assert( baseY < LCD_Y_RES );
+
+				index = ( ( baseY >> 3 ) * 84 ) + x;
+				bitMask = 0x01 << (baseY & 0x07);
+				uint8_t *addr = &LcdCache[ index ];
+				uint8_t value = *addr; // splitting LcdCache[ index ] |= bitMask;  helps compiler to optimize (saved 2B)
+				if (mode)
+				value |= bitMask;
+				else
+				value &= ( ~bitMask);
+				*addr = value;			
+			}
 			++x;
 			--xCounter;
 		}

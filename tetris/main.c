@@ -5,7 +5,8 @@
  * Author : Grzegorz Pietrusiak
  */ 
 #define SHOW_GAME_OVER FALSE
-#define TETRIMINOS_AS_BOXES FALSE
+#define TETRIMINOS_AS_BOXES TRUE
+#define LED_FANFARE FALSE
 
 #define __ASSERT_USE_STDERR
 //#define NDEBUG
@@ -52,6 +53,8 @@ uint8_t matrix[16] =  // 16rows, 8 blocks per row, each block is represented by 
 #define DOWN_BUTTON_PRESSED (!(PIND & (1<<PD1))) // returns TRUE if down button is pressed
 #define ROTATION_BUTTON_PRESSED (!(PIND & (1<<PD3))) // returns TRUE if rotation button is pressed
 #define TIMER_HAS_EXPIRED ((TIFR & (1 << TOV1) ) > 0) // returns TRUE if timer has expired
+#define LED_ON (PORTC |= (1<<5) | (1<<3))
+#define LED_OFF (PORTC &= ~((1 << 5) | (1<<3)))
 
 // poor man's random function. Not too bad as we need to random tiles from the range of 0-6 only
 static uint8_t myrand() // the cost is 30B (this function + ADC initialization)
@@ -105,6 +108,11 @@ static void gameInit()
 
 	// initialize the timer
 	startTimer(); // inform after 1 second period
+
+	if (LED_FANFARE)
+	{
+		DDRC = 0xFF;
+	}
 }
 
 static void drawTile (uint8_t x, uint8_t y)
@@ -116,11 +124,9 @@ static void drawTile (uint8_t x, uint8_t y)
 	uint8_t scrY = 48-(8 + x*4)-4;
 
 	LcdBar(scrX, scrY, 4,4);
-	if (TETRIMINOS_AS_BOXES) // -32B
+	if (TETRIMINOS_AS_BOXES)
 	{
-		LcdSetPen(PIXEL_OFF);
 		LcdBar(scrX+1, scrY+1, 2,2);
-		LcdSetPen(PIXEL_ON);
 	}
 }
 
@@ -220,6 +226,10 @@ static void moveTetriminoDown()
 		{
 			while (matrix[row] == 0xff) // we found a row full of tiles; "while" loop is used to remove all full lines dropped to "row" position
 			{
+				if (LED_FANFARE)
+				{
+					LED_ON;
+				}
 				// drop all rows above "row" one row down
 				uint8_t rowUp;
 				for (rowUp=row; rowUp>0; --rowUp)
@@ -252,13 +262,10 @@ static void displayScene()
 	// display screen decoration
 	memset(LcdCache,0x00,LCD_CACHE_SIZE); // LcdClear();
 
-	LcdSetPen(PIXEL_ON);
 	LcdBar(0,0,72,48);
-	LcdSetPen(PIXEL_OFF);
 	LcdBar(0,7,65,34);
 
 	// draw all tiles dropped till now
-	LcdSetPen(PIXEL_ON);
 	uint8_t * lineAddr = &matrix[15];
 	uint8_t y=16;
 	while(y)
@@ -297,14 +304,10 @@ static void mydelay()
 }
 
 //#define MCU_TROUBLESHOOTING
-#ifdef MCU_TROUBLESHOOTING
-#define LEDON (PORTC |=(1<<5))
-#define LEDOFF (PORTC &= ~(1 << 5))
-#endif // MCU_TROUBLESHOOTING
 int main() 
 {
 	#ifdef MCU_TROUBLESHOOTING
-	DDRC = 0xFF;while(1){LEDON;_delay_ms(500);LEDOFF;_delay_ms(500);}
+	DDRC = 0xFF;while(1){LED_ON;_delay_ms(500);LED_OFF;_delay_ms(500);}
 	#endif // MCU_TROUBLESHOOTING
 	gameInit();
 
@@ -316,6 +319,10 @@ int main()
 		{
 			mydelay();
 			isDelay = FALSE;
+		}
+		if (LED_FANFARE)
+		{
+			LED_OFF;
 		}
 
 		if ((TIMER_HAS_EXPIRED) || (DOWN_BUTTON_PRESSED))
