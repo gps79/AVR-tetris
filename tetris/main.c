@@ -399,9 +399,9 @@ int main()
 
 		if (RIGHT_BUTTON_PRESSED)
 		{
-			if ((currentTetriminoPosition&0x07) != 0x07)
+			newPosition = currentTetriminoPosition + 1;
+			if ((newPosition & 0x07) != 0) // if it is 0 it means that currentTetriminoPosition is on the very right end and we can't move to the right anymore
 			{
-				newPosition = currentTetriminoPosition + 1;
 labelNewPosition:
 				if (canPlaceTetrimino(currentTetrimino, newPosition, check))
 				{
