@@ -53,10 +53,10 @@ uint8_t matrix[16] =  // 16rows, 8 blocks per row, each block is represented by 
 	uint8_t g_score = 0;
 #endif
 
-#define LEFT_BUTTON_PRESSED (!(PIND & (1<<PD0))) // returns TRUE if left button is pressed
-#define RIGHT_BUTTON_PRESSED (!(PIND & (1<<PD2))) // returns TRUE if right button is pressed
-#define DOWN_BUTTON_PRESSED (!(PIND & (1<<PD1))) // returns TRUE if down button is pressed
-#define ROTATION_BUTTON_PRESSED (!(PIND & (1<<PD3))) // returns TRUE if rotation button is pressed
+#define LEFT_BUTTON_PRESSED (PIND & (1<<PD0)) // returns TRUE if left button is pressed
+#define RIGHT_BUTTON_PRESSED (PIND & (1<<PD2)) // returns TRUE if right button is pressed
+#define DOWN_BUTTON_PRESSED (PIND & (1<<PD1)) // returns TRUE if down button is pressed
+#define ROTATION_BUTTON_PRESSED (PIND & (1<<PD3)) // returns TRUE if rotation button is pressed
 #define TIMER_HAS_EXPIRED ((TIFR & (1 << TOV1) ) > 0) // returns TRUE if timer has expired
 #define LED_ON (PORTC |= (1<<5) | (1<<3))
 #define LED_OFF (PORTC &= ~((1 << 5) | (1<<3)))
@@ -352,16 +352,17 @@ int main()
 	while (1)
 	{
 		displayScene();
-		mydelay();
 
-		if (ENABLE_FANFARE)
-		{
-			LED_OFF;
-		}
 		if ((TIMER_HAS_EXPIRED) || (DOWN_BUTTON_PRESSED))
 		{
 			moveTetriminoDown();
 			startTimer(); // inform after 1 second period
+		}
+
+		mydelay();
+		if (ENABLE_FANFARE)
+		{
+			LED_OFF;
 		}
 
 		if (ROTATION_BUTTON_PRESSED)
