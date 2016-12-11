@@ -25,7 +25,7 @@ typedef enum
 	draw = 2
 } TStoreMode;
 
-uint8_t tetriminos[8*4] = { // there are 7 tetriminos, each of them has 4 orientations (0, 90deg., 180deg., and 270deg.)
+const uint8_t tetriminos[8*4] = { // there are 7 tetriminos, each of them has 4 orientations (0, 90deg., 180deg., and 270deg.)
 	0xE0, 0x92, 0xE0, 0x92, // I is only 3 blocks long due to optimization
 	0xE4, 0xD2, 0x9C, 0x4B, // J
 	0xF0, 0x93, 0x3C, 0xC9, // L
@@ -36,6 +36,7 @@ uint8_t tetriminos[8*4] = { // there are 7 tetriminos, each of them has 4 orient
 	0x80, 0x80, 0x80, 0x80  // . additional shape which is not a real tetrimino, but it adds some fun to the game
 };
 
+// Global variables
 uint8_t currentTetrimino; // tetrimino currently being dropped
 uint8_t currentTetriminoPosition; // linear position of tetrimino on screen calculated as x+8*y
 uint8_t nextTetrimino; // tetrimino next to be dropped once current finished
@@ -54,10 +55,9 @@ uint8_t g_score = 0;
 #define ROTATION_BUTTON_PRESSED (PIND & (1<<PD3)) // returns TRUE if rotation button is pressed
 #define TIMER_HAS_EXPIRED ((TIFR & (1 << TOV1) ) > 0) // returns TRUE if timer has expired
 
-uint8_t g_randomNumber; // uninitialized value; it is ok to be random at init :)
-
 static uint8_t myrand()
 {
+	static uint8_t g_randomNumber; // uninitialized value; it is ok to be random at init :)
 	// we use ADC conversion of unconnected ATMEGA ADC pin to read the noise. The noise is added (XOR) to randomized value to make it more random.
 	ADCSRA |= (1<<ADSC); // run ADC conversion once
 	while(ADCSRA & (1<<ADSC)); // wait until ADC conversion finishes
@@ -92,14 +92,12 @@ static void gameInit()
 	ADCSRA = (1 << ADPS2) | (1 << ADPS1) // 64 prescaler for 4Mhz
 			| (1 << ADEN);    // Enable the ADC
 
-	// initialize hardware buttons
-	//	DDRD = 0x00; // not needed?? (works without this line) Atmega has this by default?
-
-	LcdInit();
 	for (uint8_t i = 8; i; --i)
 	{
 		randomizeNextTetrimino(); // run it a couple of times to get really random values
 	}
+
+	LcdInit();
 
 	// initialize the timer
 	startTimer(); // start the timer means to start the game play
@@ -227,7 +225,7 @@ static void moveTetriminoDown()
 		if (!canPlaceTetrimino(currentTetrimino, currentTetriminoPosition, check))
 		{
 			// GAME OVER
-			while(1){}; // hang on
+			while(1){}; // go to infinite loop
 		}
 	}
 }
@@ -277,9 +275,9 @@ static void displayScene()
 	LcdUpdate(); // move the content from screen buffer to the LCD driver memory in order to display
 }
 
-static void mydelay()
+static void delayIfButtonPressed()
 {
-	uint32_t t = 165535; // tuned to get the right 
+	uint32_t t = 165535; // tuned to get the right timing in button repetition
 	while (--t && (PIND))
 	{
 	}
@@ -319,7 +317,7 @@ int main()
 			if ((currentTetriminoPosition&0x07) != 0)
 			{
 				newPosition = currentTetriminoPosition - 1;
-				goto labelNewPosition;
+				goto labelNewPosition; // this is not a good practice, but it was needed for optimization
 			}
 		}
 
@@ -339,7 +337,7 @@ labelNewPosition:
 		if (PIND) // any button is pressed
 		{
 			displayScene();
-			mydelay();
+			delayIfButtonPressed();
 		}
 		else
 		{
