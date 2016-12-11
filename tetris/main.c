@@ -6,7 +6,7 @@
  */ 
 #define SHOW_GAME_OVER FALSE
 #define TETRIMINOS_AS_BOXES TRUE
-#define ENABLE_FANFARE FALSE
+#define ENABLE_FANFARE TRUE
 #define ENABLE_SCORE
 
 #define __ASSERT_USE_STDERR
@@ -262,7 +262,7 @@ static void moveTetriminoDown()
 				}
 				LcdUpdate();
 			}
-			abort();
+			while(1){};
 		}
 	}
 }
