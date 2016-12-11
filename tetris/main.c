@@ -3,10 +3,11 @@
  *
  * Created: 30.11.2016 19:12:13
  * Author : Grzegorz Pietrusiak
- */ 
+ */
+
 #define SHOW_GAME_OVER FALSE
 #define TETRIMINOS_AS_BOXES TRUE
-#define ENABLE_FANFARE TRUE
+#define ENABLE_FANFARE FALSE
 #define ENABLE_SCORE
 
 #define __ASSERT_USE_STDERR
@@ -80,7 +81,7 @@ void startTimer()
 	TIFR = (1 << TOV1); // reset the overflow flag (by writing '1')
 //	TIFR |= (1 << TOV1); // reset the overflow flag (by writing '1')
 #ifdef ENABLE_SCORE
-	TCNT1 = 65535-4080+(g_score*16); // starting from about 0.5s period
+	TCNT1 = 65535-3580+(g_score*10); // starting from about 0.5s period
 #else
 	TCNT1 = 65535-4000; // about 0.5s period
 #endif
@@ -111,6 +112,7 @@ static void gameInit()
 
 	LcdInit();
 	randomizeNextTetrimino(); // run twice to random both current and next tetriminos
+	randomizeNextTetrimino();
 	randomizeNextTetrimino();
 
 	// initialize the timer
@@ -334,10 +336,9 @@ static void displayScene()
 
 static void mydelay()
 {
-	uint32_t t = 200000;//12000;
-	while (--t)
+	uint32_t t = 165535;
+	while (--t && (PIND))
 	{
-		__asm__ __volatile__("");
 	}
 }
 
@@ -371,8 +372,6 @@ int main()
 			if (canPlaceTetrimino(newTetrimino, currentTetriminoPosition, check))
 			{
 				currentTetrimino = newTetrimino;
-				//SET_ISDELAY_TRUE;
-//				isDelay = TRUE;
 			}
 		}
 		uint8_t newPosition;
@@ -394,17 +393,18 @@ labelNewPosition:
 				if (canPlaceTetrimino(currentTetrimino, newPosition, check))
 				{
 					currentTetriminoPosition = newPosition;
-					//SET_ISDELAY_TRUE;
-//					isDelay = TRUE;
 				}
 			}
 		}
 
-		displayScene();
-
-		if (!TIMER_HAS_EXPIRED)
+		if (PIND) // any button is pressed
 		{
+			displayScene();
 			mydelay();
+		}
+		else
+		{
+			displayScene();
 		}
 
 		if (ENABLE_FANFARE)
