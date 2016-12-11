@@ -6,7 +6,7 @@
  */ 
 #define SHOW_GAME_OVER FALSE
 #define TETRIMINOS_AS_BOXES TRUE
-#define LED_FANFARE FALSE
+#define ENABLE_FANFARE FALSE
 #define ENABLE_SCORE
 
 #define __ASSERT_USE_STDERR
@@ -80,7 +80,7 @@ void startTimer()
 	TIFR = (1 << TOV1); // reset the overflow flag (by writing '1')
 //	TIFR |= (1 << TOV1); // reset the overflow flag (by writing '1')
 #ifdef ENABLE_SCORE
-	TCNT1 = 65535-4000+(g_score<<3); // starting from about 0.5s period
+	TCNT1 = 65535-4080+(g_score*16); // starting from about 0.5s period
 #else
 	TCNT1 = 65535-4000; // about 0.5s period
 #endif
@@ -116,7 +116,7 @@ static void gameInit()
 	// initialize the timer
 	startTimer(); // inform after 1 second period
 
-	if (LED_FANFARE)
+	if (ENABLE_FANFARE)
 	{ // enable output signal for LED on PORT C
 		DDRC = 0xFF;
 	}
@@ -236,7 +236,7 @@ static void moveTetriminoDown()
 				#ifdef ENABLE_SCORE
 					++g_score;
 				#endif
-				if (LED_FANFARE)
+				if (ENABLE_FANFARE)
 				{
 					LED_ON;
 				}
@@ -334,7 +334,7 @@ static void displayScene()
 
 static void mydelay()
 {
-	uint32_t t = 205535;//12000;
+	uint32_t t = 155535;//12000;
 	while (--t)
 	{
 		__asm__ __volatile__("");
@@ -349,25 +349,19 @@ int main()
 	#endif // MCU_TROUBLESHOOTING
 	gameInit();
 
-	bool isDelay = FALSE;
-	while(1)
+	while (1)
 	{
 		displayScene();
-		if (isDelay)
-		{
-			mydelay();
-			isDelay = FALSE;
-		}
-		if (LED_FANFARE)
+		mydelay();
+
+		if (ENABLE_FANFARE)
 		{
 			LED_OFF;
 		}
-
 		if ((TIMER_HAS_EXPIRED) || (DOWN_BUTTON_PRESSED))
 		{
 			moveTetriminoDown();
 			startTimer(); // inform after 1 second period
-			isDelay = TRUE;
 		}
 
 		if (ROTATION_BUTTON_PRESSED)
@@ -384,7 +378,8 @@ int main()
 			if (canPlaceTetrimino(newTetrimino, currentTetriminoPosition, check))
 			{
 				currentTetrimino = newTetrimino;
-				isDelay = TRUE;
+				//SET_ISDELAY_TRUE;
+//				isDelay = TRUE;
 			}
 		}
 		uint8_t newPosition;
@@ -406,7 +401,8 @@ labelNewPosition:
 				if (canPlaceTetrimino(currentTetrimino, newPosition, check))
 				{
 					currentTetriminoPosition = newPosition;
-					isDelay = TRUE;
+					//SET_ISDELAY_TRUE;
+//					isDelay = TRUE;
 				}
 			}
 		}
