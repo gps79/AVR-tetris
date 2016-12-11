@@ -334,12 +334,13 @@ static void displayScene()
 
 static void mydelay()
 {
-	uint32_t t = 155535;//12000;
+	uint32_t t = 200000;//12000;
 	while (--t)
 	{
 		__asm__ __volatile__("");
 	}
 }
+
 
 //#define MCU_TROUBLESHOOTING
 int main() 
@@ -351,20 +352,11 @@ int main()
 
 	while (1)
 	{
-		displayScene();
-
 		if ((TIMER_HAS_EXPIRED) || (DOWN_BUTTON_PRESSED))
 		{
 			moveTetriminoDown();
 			startTimer(); // inform after 1 second period
 		}
-
-		mydelay();
-		if (ENABLE_FANFARE)
-		{
-			LED_OFF;
-		}
-
 		if (ROTATION_BUTTON_PRESSED)
 		{
 			uint8_t newTetrimino;
@@ -408,6 +400,17 @@ labelNewPosition:
 			}
 		}
 
+		displayScene();
+
+		if (!TIMER_HAS_EXPIRED)
+		{
+			mydelay();
+		}
+
+		if (ENABLE_FANFARE)
+		{
+			LED_OFF;
+		}
 	}	
 	return 0;
 }
