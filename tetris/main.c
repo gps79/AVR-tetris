@@ -1,14 +1,10 @@
 /*
  * tetris.c
  *
- * Created: 30.11.2016 19:12:13
+ * Created: 30.11.2016
  * Author : Grzegorz Pietrusiak
+ * First release version ready: 11.12.2016
  */
-
-#define SHOW_GAME_OVER FALSE
-#define TETRIMINOS_AS_BOXES TRUE
-#define ENABLE_FANFARE FALSE
-#define ENABLE_SCORE
 
 #define __ASSERT_USE_STDERR
 //#define NDEBUG
@@ -50,24 +46,18 @@ uint8_t matrix[16] =  // 16rows, 8 blocks per row, each block is represented by 
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 };
 
-#ifdef ENABLE_SCORE
-	uint8_t g_score = 0;
-#endif
+uint8_t g_score = 0;
 
 #define LEFT_BUTTON_PRESSED (PIND & (1<<PD0)) // returns TRUE if left button is pressed
 #define RIGHT_BUTTON_PRESSED (PIND & (1<<PD2)) // returns TRUE if right button is pressed
 #define DOWN_BUTTON_PRESSED (PIND & (1<<PD1)) // returns TRUE if down button is pressed
 #define ROTATION_BUTTON_PRESSED (PIND & (1<<PD3)) // returns TRUE if rotation button is pressed
 #define TIMER_HAS_EXPIRED ((TIFR & (1 << TOV1) ) > 0) // returns TRUE if timer has expired
-#define LED_ON (PORTC |= (1<<5) | (1<<3))
-#define LED_OFF (PORTC &= ~((1 << 5) | (1<<3)))
 
 uint8_t g_randomNumber; // uninitialized value; it is ok to be random at init :)
 
-// poor man's random function. Not too bad as we need to random tiles from the range of 0-6 only
-static uint8_t myrand() // the cost is 30B (this function + ADC initialization)
+static uint8_t myrand()
 {
-
 	// we use ADC conversion of unconnected ATMEGA ADC pin to read the noise. The noise is added (XOR) to randomized value to make it more random.
 	ADCSRA |= (1<<ADSC); // run ADC conversion once
 	while(ADCSRA & (1<<ADSC)); // wait until ADC conversion finishes
@@ -79,12 +69,7 @@ static uint8_t myrand() // the cost is 30B (this function + ADC initialization)
 void startTimer()
 {
 	TIFR = (1 << TOV1); // reset the overflow flag (by writing '1')
-//	TIFR |= (1 << TOV1); // reset the overflow flag (by writing '1')
-#ifdef ENABLE_SCORE
 	TCNT1 = 65535-3580+(g_score*10); // starting from about 0.5s period
-#else
-	TCNT1 = 65535-4000; // about 0.5s period
-#endif
 	TCCR1B = (1 << CS10) | (1 << CS12); // start the timer by setting 1024 prescaler
 }
 
@@ -111,17 +96,13 @@ static void gameInit()
 	//	DDRD = 0x00; // not needed?? (works without this line) Atmega has this by default?
 
 	LcdInit();
-	randomizeNextTetrimino(); // run twice to random both current and next tetriminos
-	randomizeNextTetrimino();
-	randomizeNextTetrimino();
+	for (uint8_t i = 8; i; --i)
+	{
+		randomizeNextTetrimino(); // run it a couple of times to get really random values
+	}
 
 	// initialize the timer
-	startTimer(); // inform after 1 second period
-
-	if (ENABLE_FANFARE)
-	{ // enable output signal for LED on PORT C
-		DDRC = 0xFF;
-	}
+	startTimer(); // start the timer means to start the game play
 }
 
 static void drawTile (uint8_t x, uint8_t y)
@@ -133,10 +114,7 @@ static void drawTile (uint8_t x, uint8_t y)
 	uint8_t scrY = 48-(8 + x*4)-4;
 
 	LcdBar(scrX, scrY, 4,4);
-	if (TETRIMINOS_AS_BOXES)
-	{
-		LcdBar(scrX+1, scrY+1, 2,2);
-	}
+	LcdBar(scrX+1, scrY+1, 2,2);
 }
 
 // this function works in three modes depending on the value of "storePermanently"
@@ -149,7 +127,7 @@ static void drawTile (uint8_t x, uint8_t y)
 //   it draws tetrimino in "position" without checking anything or touching the "matrix"
 //
 // "tetrimino" contains 3 bits of tetrimino number and 2 bits of orientation
-//   bits in tetrominoId:   MSB  000NNNOO LSB
+//   bits in tetrimino:     MSB  000NNNOO LSB
 //                              NNN - 3 bits of tetrimino number (values 0-7)
 //                               OO - 2 bits of tetrimino orientation (values 0-3)
 // "position" is a linear position on screen (16 rows by 8 columns)
@@ -235,13 +213,7 @@ static void moveTetriminoDown()
 		{
 			while (matrix[row] == 0xff) // we found a row full of tiles; "while" loop is used to remove all full lines dropped to "row" position
 			{
-				#ifdef ENABLE_SCORE
-					++g_score;
-				#endif
-				if (ENABLE_FANFARE)
-				{
-					LED_ON;
-				}
+				++g_score;
 				// drop all rows above "row" one row down
 				uint8_t rowUp;
 				for (rowUp=row; rowUp>0; --rowUp)
@@ -255,48 +227,21 @@ static void moveTetriminoDown()
 		if (!canPlaceTetrimino(currentTetrimino, currentTetriminoPosition, check))
 		{
 			// GAME OVER
-			if (SHOW_GAME_OVER)
-			{
-				for (uint16_t i = 0; i<48*84/8; i+=2)
-				{
-					LcdCache[i] &= 0xAA;
-					LcdCache[i+1] &= 0x55;
-				}
-				LcdUpdate();
-			}
-			while(1){};
+			while(1){}; // hang on
 		}
 	}
 }
 
 
-#ifdef ENABLE_SCORE
 static void showScore()
 {
 	LcdBar(2,3,64-(g_score>>2), 1);
-	//uint8_t score = g_score>>3;
-	//uint8_t *scrPtr = (uint8_t *)&LcdCache[2]; // last line; 16th pixel from the right end
-	//for (uint8_t i=32; i;)
-	//{
-		//--i;
-		//if (i==score)
-		//{
-			//*scrPtr++ &= 0xFF;
-			//*scrPtr++ &= 0xFF;
-		//}
-		//else
-		//{
-			//*scrPtr++ &= 0x63;
-			//*scrPtr++ &= 0x6B;
-		//}
-	//}
 }
-#endif
 
 static void displayScene()
 {
 	// display screen decoration
-	memset(LcdCache,0x00,LCD_CACHE_SIZE); // LcdClear();
+	memset(LcdCache,0x00,LCD_CACHE_SIZE);  // clear LCD screen buffer
 
 	LcdBar(0,0,72,48);
 	LcdBar(0,7,65,34);
@@ -327,28 +272,22 @@ static void displayScene()
 	// draw next tetrimino
 	canPlaceTetrimino(nextTetrimino, NEXT_TETRIMINO_POSITION, draw);
 
-#ifdef ENABLE_SCORE
 	showScore();
-#endif
 
-	LcdUpdate(); // draw from buffer to the LCD
+	LcdUpdate(); // move the content from screen buffer to the LCD driver memory in order to display
 }
 
 static void mydelay()
 {
-	uint32_t t = 165535;
+	uint32_t t = 165535; // tuned to get the right 
 	while (--t && (PIND))
 	{
 	}
 }
 
 
-//#define MCU_TROUBLESHOOTING
 int main() 
 {
-	#ifdef MCU_TROUBLESHOOTING
-	DDRC = 0xFF;while(1){LED_ON;_delay_ms(500);LED_OFF;_delay_ms(500);}
-	#endif // MCU_TROUBLESHOOTING
 	gameInit();
 
 	while (1)
@@ -356,7 +295,7 @@ int main()
 		if ((TIMER_HAS_EXPIRED) || (DOWN_BUTTON_PRESSED))
 		{
 			moveTetriminoDown();
-			startTimer(); // inform after 1 second period
+			startTimer();
 		}
 		if (ROTATION_BUTTON_PRESSED)
 		{
@@ -405,11 +344,6 @@ labelNewPosition:
 		else
 		{
 			displayScene();
-		}
-
-		if (ENABLE_FANFARE)
-		{
-			LED_OFF;
 		}
 	}	
 	return 0;
