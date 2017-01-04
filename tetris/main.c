@@ -283,7 +283,6 @@ static void delayIfButtonPressed()
 	}
 }
 
-
 int main() 
 {
 	gameInit();

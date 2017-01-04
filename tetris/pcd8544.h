@@ -4,6 +4,7 @@
  *
  * Description  :  This is header file for the PCD8544 graphic LCD driver.
  *                 Based on the code written by Sylvain Bissonette
+ *                 The driver has been re-designed for 1KB Challenge
  *
  * Author       :  Fandi Gunawan <fandigunawan@gmail.com>
  * Website      :  http://fandigunawan.wordpress.com
@@ -12,6 +13,8 @@
  *                 Louis Frigon (2003)
  *
  * License      :  GPL v. 3
+ *
+ * Modified by  :  Grzegorz Pietrusiak <gpsspam2@gmail.com>
  *
  * Compiler     :  WinAVR, GCC for AVR platform
  *                 Tested version :

@@ -6,6 +6,7 @@
  *                 Based on the code written by Sylvain Bissonette
  *                 This driver is buffered in 504 bytes memory be sure
  *                 that your MCU having bigger memory
+ *                 The driver has been re-designed for 1KB Challenge
  *
  * Author       :  Fandi Gunawan <fandigunawan@gmail.com>
  * Modified by  :  Grzegorz Pietrusiak <gpsspam2@gmail.com>
@@ -36,8 +37,6 @@ static int   LcdCacheIdx;
  */
 static void LcdInit ( void ) // once static it will be built-in as inline
 {
-    /* Pull-up on reset pin. */
-//    LCD_PORT |= _BV ( LCD_RST_PIN ); // not needed ?? (works without this line)
     /* Set output bits on LCD Port. */
     LCD_DDR |= _BV( LCD_RST_PIN ) | _BV( LCD_DC_PIN ) | _BV( LCD_CE_PIN ) | _BV( SPI_MOSI_PIN ) | _BV( SPI_CLK_PIN );
     /* Toggle display reset pin. */
@@ -98,11 +97,15 @@ static void LcdBar ( uint8_t baseX, uint8_t baseY, uint8_t width, uint8_t height
 				index = ( ( baseY >> 3 ) * 84 ) + x;
 				bitMask = 0x01 << (baseY & 0x07);
 				uint8_t *addr = &LcdCache[ index ];
-				uint8_t value = *addr; // splitting LcdCache[ index ] |= bitMask;  helps compiler to optimize (saved 2B)
+				uint8_t value = *addr; // splitting LcdCache[ index ] |= bitMask;  it helps the compiler to optimize (we saved 2B)
 				if (mode)
-				value |= bitMask;
+				{
+					value |= bitMask;
+				}
 				else
-				value &= ( ~bitMask);
+				{
+					value &= ( ~bitMask);
+				}
 				*addr = value;			
 			}
 			++x;
@@ -117,7 +120,6 @@ static void LcdBar ( uint8_t baseX, uint8_t baseY, uint8_t width, uint8_t height
  * Name         :  LcdSend
  * Description  :  Sends data to display controller.
  * Argument(s)  :  data -> Data to be sent
- *                 cd   -> Command or data (see enum in pcd8544.h)
  * Return value :  None.
  */
 
