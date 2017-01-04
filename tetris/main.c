@@ -2,8 +2,9 @@
  * tetris.c
  *
  * Created: 30.11.2016
- * Author : Grzegorz Pietrusiak
+ * Author : Grzegorz Pietrusiak <gpsspam2@gmail.com>
  * First release version ready: 11.12.2016
+ * License      :  GPL
  */
 
 #define __ASSERT_USE_STDERR
@@ -25,7 +26,7 @@ typedef enum
 	draw = 2
 } TStoreMode;
 
-const uint8_t tetriminos[8*4] = { // there are 7 tetriminos, each of them has 4 orientations (0, 90deg., 180deg., and 270deg.)
+const uint8_t tetriminos[8*4] = { // there are 8 tetriminos, each of them has 4 orientations (0, 90deg., 180deg., and 270deg.)
 	0xE0, 0x92, 0xE0, 0x92, // I is only 3 blocks long due to optimization
 	0xE4, 0xD2, 0x9C, 0x4B, // J
 	0xF0, 0x93, 0x3C, 0xC9, // L
@@ -89,7 +90,7 @@ static void gameInit()
 {
 	// initialize ADC0 which supports random number generator
 	ADMUX = (1 << REFS0) | (1 << REFS1); // ADC0 + internal 2.56V reference
-	ADCSRA = (1 << ADPS2) | (1 << ADPS1) // 64 prescaler for 4Mhz
+	ADCSRA = (1 << ADPS2) | (1 << ADPS1) // 64 prescaler
 			| (1 << ADEN);    // Enable the ADC
 
 	for (uint8_t i = 8; i; --i)
