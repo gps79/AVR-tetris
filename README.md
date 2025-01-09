@@ -1,4 +1,4 @@
-<center><img src="documentation/background.jpg"></center>
+<img src="documentation/background.jpg">
 
 # Tetris-like game on ATmega8 with Nokia 3310 Display
 
@@ -22,6 +22,8 @@ There were many optimizations applied to the C code to reach the 1024B binary si
 - **Memory Efficiency**: Implemented with strict attention to code size; fits within the 1KB constraint.
 - **Controls**: Simple button controls to rotate and move tetrominoes.
 - **Limits**: Limited tetrominoes (not fully meeting the classic Tetris standard) due to game size optimization.
+
+<img src="documentation/screen_described.jpg" width="200">
 
 ## Getting Started
 <img src="documentation/20161204_230641.jpg" width="600">
